@@ -1,10 +1,10 @@
 import { StoreApiPlugin } from '../types';
 
-type Setters = {
+type PluginResetSetters = {
   reset: () => void;
 };
 
-export const reset: StoreApiPlugin<{}, {}, Setters> = {
+export const reset: StoreApiPlugin<{}, {}, PluginResetSetters> = {
   extends: store => {
     return store.extendSetters(({ api }) => ({
       reset: () => {

@@ -5,9 +5,9 @@ export type Empty = Record<string, never>;
 export type Default = Record<string | symbol, any>;
 export type EqualityChecker<T> = (state: T, newState: T) => boolean;
 
-export type StoreApiGet<T extends State, Getters> = GetRecord<T> & Getters;
-export type StoreApiUse<T extends State, Getters> = UseRecord<T> & Getters;
-export type StoreApiSet<T extends State, Setters> = SetRecord<T> & Setters;
+export type StoreApiGet<T extends State, Getters> = Required<GetRecord<T>> & Getters;
+export type StoreApiUse<T extends State, Getters> = Required<UseRecord<T>> & Getters;
+export type StoreApiSet<T extends State, Setters> = Required<SetRecord<T>> & Setters;
 
 export type StoreApiEncapsulated<T extends State = Empty, Getters = Default, Setters = Default> = {
   api: StoreApiLib<T>;
