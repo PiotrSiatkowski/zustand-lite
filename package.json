@@ -1,0 +1,41 @@
+{
+  "name": "zustand-lite",
+  "version": "0.1.0",
+  "description": "Zustand Lite builds upon zustand, by auto-generating selectors and simplifying API even more.",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PiotrSiatkowski/zustand-lite.git"
+  },
+  "author": "Piotr Siatkowski",
+  "keywords": [
+    "zustand",
+    "state-management",
+    "react",
+    "store",
+    "plugin",
+    "typescript",
+    "no-boilerplate"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/"
+  ],
+  "dependencies": {
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  },
+  "private": false
+}
