@@ -33,7 +33,7 @@ export type StoreApi<T extends State = Empty, Getters = Default, Setters = Defau
   restrictState(): StoreApiEncapsulated<T, Getters, Setters>;
   restrictState<Key extends keyof T>(
     publicState: Key[],
-  ): StoreApiEncapsulated<Pick<T, Key>, Getters, Setters>;
+  ): StoreApiEncapsulated<Omit<T, Key>, Getters, Setters>;
 };
 
 export type GettersBuilder<T extends State, Getters = Default, Setters = Default> = (args: {
