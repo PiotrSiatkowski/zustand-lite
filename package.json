@@ -1,6 +1,6 @@
 {
   "name": "zustand-lite",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Zustand Lite builds upon zustand, by auto-generating selectors and simplifying API even more.",
   "author": "Piotr Siatkowski <p.siatkowski@gmail.com>",
   "license": "MIT",
@@ -43,7 +43,8 @@
     "zustand": "5.0.5"
   },
   "devDependencies": {
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "tsup": "^8.5.0"
   },
   "private": false
 }
