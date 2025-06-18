@@ -5,7 +5,7 @@ import { StoreApi } from 'zustand';
 
 import { EqualityChecker, GetRecord, State } from '../types';
 
-export function generateStateUse<T extends State>(api: StoreApi<T>) {
+export function generateUse<T extends State>(api: StoreApi<T>) {
   const getters: GetRecord<T> = {} as GetRecord<T>;
 
   Object.keys(api.getState()).forEach(key => {

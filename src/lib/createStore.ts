@@ -16,11 +16,12 @@ import {
   StoreApi,
   StoreApiPluginList,
 } from '../types';
+import { generateApi } from "./generateApi";
+import { generateGet } from './generateGet';
+import { generateSet } from './generateSet';
+import { generateUse } from './generateUse';
 import { extendGetters } from './extendGetters';
 import { extendSetters } from './extendSetters';
-import { generateStateGet } from './generateStateGet';
-import { generateStateSet } from './generateStateSet';
-import { generateStateUse } from './generateStateUse';
 import { restrictState } from './restrictState';
 
 export function createStore<T extends State, Plugins extends StoreApiPluginList = []>(
@@ -50,7 +51,7 @@ export function createStore<T extends State, Plugins extends StoreApiPluginList 
   if (middlewares.devtools) {
     initializer = devtools(
       initializer,
-      middlewares.devtools === true ? { name } : middlewares.devtools,
+      middlewares.devtools === true ? { name: 'zustand-lite', store: name } : middlewares.devtools,
     );
   }
 
@@ -66,10 +67,10 @@ export function createStore<T extends State, Plugins extends StoreApiPluginList 
 
   // Create zustand-lite wrapper.
   let store: any = {
-    api: storeApi,
-    get: generateStateGet(storeApi),
-    set: generateStateSet(storeApi, !!middlewares.devtools, name),
-    use: generateStateUse(storeApi),
+    api: generateApi(storeApi, !!middlewares.devtools),
+    get: generateGet(storeApi),
+    set: generateSet(storeApi, !!middlewares.devtools),
+    use: generateUse(storeApi),
     extendGetters<Builder extends GettersBuilder<typeof mergedState>>(builder: Builder) {
       return extendGetters(builder, this);
     },

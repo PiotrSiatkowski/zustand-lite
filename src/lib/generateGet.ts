@@ -2,7 +2,7 @@ import { StoreApi } from 'zustand/vanilla';
 
 import { GetRecord, State } from '../types';
 
-export function generateStateGet<T extends State>(api: StoreApi<T>) {
+export function generateGet<T extends State>(api: StoreApi<T>) {
   const getters: GetRecord<T> = {} as GetRecord<T>;
 
   const initialState = api.getState();

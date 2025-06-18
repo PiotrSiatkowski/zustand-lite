@@ -3,10 +3,9 @@ import { StoreApi } from 'zustand/vanilla';
 
 import { SetRecord, State } from '../types';
 
-export function generateStateSet<T extends State>(
+export function generateSet<T extends State>(
   api: StoreApi<T>,
   hasDevtools: boolean,
-  storeName: string
 ): SetRecord<T> {
   const setters: SetRecord<T> = {} as SetRecord<T>;
 
@@ -23,7 +22,7 @@ export function generateStateSet<T extends State>(
           [key]: value,
         }),
         false,
-        hasDevtools ? { type: `${storeName}/${key}`, payload: { [key]: value } } : undefined,
+        hasDevtools ? { type: key, payload: { [key]: value } } : undefined,
       );
     };
   });
