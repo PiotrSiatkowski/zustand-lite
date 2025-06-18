@@ -40,7 +40,7 @@ export type GettersBuilder<T extends State, Getters = Default, Setters = Default
   api: StoreApiLib<T>;
   get: StoreApiGet<T, Getters>;
   set: StoreApiSet<T, Setters>;
-}) => Record<string, (...args: any[]) => {}>;
+}) => Record<string, (...args: any[]) => any>;
 
 export type SettersBuilder<T extends State, Getters = Default, Setters = Default> = (args: {
   api: StoreApiLib<T>;
