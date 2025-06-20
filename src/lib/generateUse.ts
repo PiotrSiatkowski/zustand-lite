@@ -1,19 +1,23 @@
-import { shallow } from 'zustand/shallow';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/shallow'
+import { useStoreWithEqualityFn } from 'zustand/traditional'
 
-import { StoreApi } from 'zustand';
+import { StoreApi } from 'zustand'
 
-import { EqualityChecker, GetRecord, State } from '../types';
+import { EqualityChecker, State, UseRecord } from '../types'
 
+/**
+ * Generates automatic getters like store.use.foo()
+ * @param api Zustand api interface
+ */
 export function generateUse<T extends State>(api: StoreApi<T>) {
-  const getters: GetRecord<T> = {} as GetRecord<T>;
+	const getters: UseRecord<T> = {} as UseRecord<T>
 
-  Object.keys(api.getState()).forEach(key => {
-    getters[key as keyof T] = (equalityFn: EqualityChecker<T[keyof T]> = shallow) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      return useStoreWithEqualityFn(api, (state: T) => state[key as keyof T], equalityFn);
-    };
-  });
+	// All of these wrappers are hooks and should obey the rule of hooks.
+	Object.keys(api.getState()).forEach((key) => {
+		getters[key as keyof T] = (equalityFn: EqualityChecker<T[keyof T]> = shallow) => {
+			return useStoreWithEqualityFn(api, (state: T) => state[key as keyof T], equalityFn)
+		}
+	})
 
-  return getters;
+	return getters
 }
