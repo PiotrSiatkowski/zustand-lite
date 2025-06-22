@@ -4,10 +4,9 @@ type PluginResetSetters = { reset: () => void }
 
 export const reset: StoreApiPlugin<{}, {}, PluginResetSetters> = {
 	extends: (store) => {
-		return store.extendSetters(({ api }) => ({
+		return store.extendSetters(({ api, set }) => ({
 			reset: () => {
-				const initialState = api.getInitialState?.() ?? {}
-				api.setState(() => initialState, true)
+				set(api.getInitialState?.() ?? {}, true)
 			},
 		}))
 	},

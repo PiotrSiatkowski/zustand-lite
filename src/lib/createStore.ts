@@ -24,16 +24,16 @@ import { extendGetters } from './extendGetters'
 import { extendSetters } from './extendSetters'
 import { restrictState } from './restrictState'
 
-export function createStore<T extends State, Plugins extends StoreApiPluginList = []>(
-	initialState: T,
+export function createStore<S extends State, Plugins extends StoreApiPluginList = []>(
+	initialState: S,
 	options?: {
 		name?: string
 		plugins?: [...Plugins]
 		middlewares?: { devtools?: true | DevtoolsOptions; persist?: true | PersistOptions<any> }
 	}
 ): Plugins extends []
-	? StoreApi<T>
-	: StoreApi<AugmentedApiData<T, Plugins>, AugmentedGetters<Plugins>, AugmentedSetters<Plugins>> {
+	? StoreApi<S>
+	: StoreApi<AugmentedApiData<S, Plugins>, AugmentedGetters<Plugins>, AugmentedSetters<Plugins>> {
 	const { name = 'zustand-lite', plugins = [], middlewares = {} } = options ?? {}
 
 	// Merge state from plugins to be available for future use.
@@ -68,26 +68,18 @@ export function createStore<T extends State, Plugins extends StoreApiPluginList 
 
 	// Create zustand-lite wrapper.
 	let store: any = {
-		api: generateApi(storeApi, !!middlewares.devtools),
+		api: generateApi(storeApi),
 		get: generateGet(storeApi),
 		set: generateSet(storeApi, !!middlewares.devtools),
 		use: generateUse(storeApi),
 		extendGetters<Builder extends GettersBuilder<typeof mergedState>>(builder: Builder) {
-			return extendGetters(builder, this)
+			return extendGetters(builder, this, storeApi)
 		},
 		extendSetters<Builder extends SettersBuilder<typeof mergedState>>(builder: Builder) {
 			return extendSetters(builder, this)
 		},
-		restrictState<Key extends keyof T>(publicState: Key[] = []) {
-			return restrictState(
-				publicState,
-				mergedState,
-				this as StoreApi<
-					AugmentedApiData<T, Plugins>,
-					AugmentedGetters<Plugins>,
-					AugmentedSetters<Plugins>
-				>
-			)
+		restrictState<Key extends keyof S>(publicState: Key[] = []) {
+			return restrictState(publicState, mergedState, this)
 		},
 	}
 

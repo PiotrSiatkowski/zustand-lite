@@ -1,51 +1,63 @@
 {
-  "name": "zustand-lite",
-  "version": "0.2.4",
-  "description": "Zustand Lite builds upon zustand, by auto-generating selectors and simplifying API even more.",
-  "author": "Piotr Siatkowski <p.siatkowski@gmail.com>",
-  "license": "MIT",
-  "keywords": [
-    "zustand",
-    "state-management",
-    "react",
-    "store",
-    "plugin",
-    "typescript",
-    "no-boilerplate"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/PiotrSiatkowski/zustand-lite.git",
-    "web": "https://github.com/PiotrSiatkowski/zustand-lite"
-  },
-  "bugs": {
-    "url": "https://github.com/PiotrSiatkowski/zustand-lite/issues"
-  },
-  "sideEffects": false,
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist/**/*"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "module": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean --sourcemap --minify"
-  },
-  "dependencies": {
-    "zustand": "5.0.5"
-  },
-  "devDependencies": {
-    "prettier": "^3.5.3",
-    "typescript": "5.8.3",
-    "tsup": "^8.5.0"
-  },
-  "private": false
+	"name": "zustand-lite",
+	"version": "0.3.0",
+	"description": "Zustand Lite builds upon zustand, by auto-generating selectors and simplifying API even more.",
+	"author": "Piotr Siatkowski <p.siatkowski@gmail.com>",
+	"license": "MIT",
+	"keywords": [
+		"zustand",
+		"state-management",
+		"react",
+		"store",
+		"plugin",
+		"typescript",
+		"no-boilerplate"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/PiotrSiatkowski/zustand-lite.git",
+		"web": "https://github.com/PiotrSiatkowski/zustand-lite"
+	},
+	"bugs": {
+		"url": "https://github.com/PiotrSiatkowski/zustand-lite/issues"
+	},
+	"sideEffects": false,
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist/**/*"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs",
+			"module": "./dist/index.mjs",
+			"require": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "jest && tsup src/index.ts --format cjs,esm --dts --clean --sourcemap --minify",
+		"test": "jest"
+	},
+	"dependencies": {
+		"zustand": "5.0.5"
+	},
+	"devDependencies": {
+		"@testing-library/jest-dom": "^6.6.3",
+		"@testing-library/react": "^16.3.0",
+		"@types/jest": "^30.0.0",
+		"@types/react": "^19.1.8",
+		"jest": "^30.0.2",
+		"jest-environment-jsdom": "^30.0.2",
+		"prettier": "^3.5.3",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"ts-jest": "^29.4.0",
+		"tsup": "^8.5.0",
+		"typescript": "5.8.3",
+		"use-sync-external-store": "^1.5.0"
+	},
+	"private": false
 }

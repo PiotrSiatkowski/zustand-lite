@@ -1,33 +1,32 @@
 import { shallow } from 'zustand/shallow'
 import { useStoreWithEqualityFn } from 'zustand/traditional'
+import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { Default, GettersBuilder, State, StoreApi } from '../types'
 
 export function extendGetters<
-	Builder extends GettersBuilder<T, Getters, Setters>,
-	T extends State = Default,
+	Builder extends GettersBuilder<S, Getters, Setters>,
+	S extends State = Default,
 	Getters = Default,
 	Setters = Default,
->(builder: Builder, thisApi: StoreApi<T, Getters, Setters>) {
-	const use = { ...thisApi.use }
-	const get = { ...thisApi.get }
-
-	Object.keys(builder(thisApi)).forEach((key) => {
+>(builder: Builder, api: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
+	Object.keys(builder(api)).forEach((key) => {
 		// @ts-ignore
-		use[key] = (...args: any[]) =>
+		api.use[key] = (...args: any[]) =>
+			// eslint-disable-next-line react-hooks/rules-of-hooks
 			useStoreWithEqualityFn(
-				thisApi.api,
+				lib,
 				() => {
-					return builder(thisApi)[key](...args)
+					return builder(api)[key](...args)
 				},
 				shallow
 			)
 
 		// @ts-ignore
-		get[key] = (...args: any[]) => {
-			return builder(thisApi)[key](...args)
+		api.get[key] = (...args: any[]) => {
+			return builder(api)[key](...args)
 		}
 	})
 
-	return { ...thisApi, get, use } as StoreApi<T, Getters & ReturnType<Builder>, Setters>
+	return api as StoreApi<S, Getters & ReturnType<Builder>, Setters>
 }
