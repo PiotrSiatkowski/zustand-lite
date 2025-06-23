@@ -63,17 +63,17 @@ export const store = createStore({ foo: '' })
 
 // Subscribe for your data changes.
 function Component() {
-	const foo = store.use.foo()
+    const foo = store.use.foo()
 }
 
 // Synchronous state accessor.
 function onClick() {
-	console.log(store.get().foo)
+    console.log(store.get().foo)
 }
 
 // Setting value with auto-generated setter.
 function onClick() {
-	store.set.foo('new-value')
+    store.set.foo('new-value')
 }
 ```
 
@@ -81,57 +81,65 @@ function onClick() {
 
 ```ts
 const store = createStore({ count: 0 })
-  .extendSetters(({ get, set }) => ({
-    increment: () => set.count(get().count + 1)
-  }))
+    .extendSetters(({ get, set }) => ({
+           increment: () => set.count(get().count + 1)
+      }))
 
 function Counter() {
-  const count = store.use.count()
-  return (
-    <button onClick={store.set.increment}>
-      Count: {count}
-    </button>
-  )
+    const count = store.use.count()
+     return (
+        <button onClick={store.set.increment}>
+            Count: {count}
+        </button>
+    )
 }
 ```
 
 ### Advanced store
 
 ```ts
-const initialState: { point: { x: number; y: number }; rectangle: { a: number; b: number } } = {
-	point: { x: 0, y: 0 },
-	rectangle: { a: 20, b: 10 },
+const initialState: {
+    point: { x: number; y: number }
+    rectangle: { a: number; b: number }
+} = { 
+    point: { x: 0, y: 0 }, 
+    rectangle: { a: 20, b: 10 } 
 }
 
 export const store = createStore(initialState)
-	.extendGetters(({ get }) => ({ area: () => get().rectangle.x * get().rectangle.y }))
-	.extendSetters(({ get, set }) => ({
-		translateX: (dx: number) => set.bar({ x: get().point.x + dx, y: get().point.y }),
-	}))
-	.restrictState(['rectangle'])
-// ^ Seal the store, so that certain fields are unavailable for the outside context,
-// while still being available for getters and setters.
+    .extendGetters(({ get }) => ({
+        area: () => get().rectangle.x * get().rectangle.y,
+    }))
+    .extendSetters(({ get, set }) => ({
+        translateX: (dx: number) =>
+            set.bar({ x: get().point.x + dx, y: get().point.y }),
+    }))
+    .restrictState(['rectangle'])
+// ^ Seal the store, so that certain fields are unavailable for 
+// the outside context, while still being available for getters and setters.
 
 // Subscribe for computed data changes. This new selector is auto-generated.
 function Component() {
-	const area = store.use.area()
+    const area = store.use.area()
 }
 
 // Make private value inaccessible.
 function onClick() {
-	console.log(store.get().rectangle)
-	// ^ TS error, no value. It is not accessible anymore from outside the store.
+    console.log(store.get().rectangle)
+    // ^ TS error, no value. It is not accessible 
+    // anymore from outside the store.
 }
 
 // Call custom action.
 function onClick() {
-	store.set.translateX(7)
+    store.set.translateX(7)
 }
 
-// Access native Zustand api (expect getState, setState, which are
-// available thrugh store.get() and store.set() for simplicity and expresivness).
+// Access native Zustand api (expect getState, setState, 
+// which are available thrugh store.get() and store.set() 
+// for simplicity and additional expresivness).
 function Component() {
-	const state = store.api.getInitialState()
+    const state = store.api.getInitialState()
 }
 ```
 
@@ -139,93 +147,109 @@ function Component() {
 
 ```ts
 const initialState: { my: { foo: { bar: string} } } = {
-  my: { foo: { bar: 'value' } },
+    my: { foo: { bar: 'value' } },
 }
 
 export const store = createStore(initialState)
-  .myFooBar(({ get }) => ({
-    // Entire state is accessible with store.get()
-    return get().my.foo.bar;
-  }))
-  .restrictState()
+    .myFooBar(({ get }) => ({
+        // Entire state is accessible with store.get()
+        return get().my.foo.bar;
+    }))
+    .restrictState()
 
 // Component will update only if deeply nested value will update.
 function Component() {
-  const myFooBar = store.use.myFooBar()
+    const myFooBar = store.use.myFooBar()
 }
 ```
 
 ### Automatic deep selectors
 
 ```ts
-const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
+const initialState: { my: { foo: { bar: string } } } = {
+    my: { foo: { bar: 'value' } },
+}
 
 export const store = createStore(initialState)
 
-// Component will update only if deeply nested value will update. Those selectors
-// will be generated only for required attributes.
+// Component will update only if deeply nested value will update. 
+// Those selectors will be generated only for required attributes.
 function Component() {
-	const myFooBar = store.use.my.foo.bar()
+    const myFooBar = store.use.my.foo.bar()
 }
 ```
 
 ### Ad-hoc selectors
 
 ```ts
-const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
+const initialState: { my: { foo: { bar: string } } } = {
+    my: { foo: { bar: 'value' } },
+}
 
 export const store = createStore(initialState)
 
-// If no auto-generated selector is available, custom one may still be used.
+// If no auto-generated selector is available, 
+// custom one may still be used.
 function Component() {
-	const myFooBar = store.use((state) => state.my.foo, customEquality)
+    const myFooBar = store.use((state) => state.my.foo, customEquality)
 }
 ```
 
 ### Setting whole state
 
 ```ts
-const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
+const initialState: { my: { foo: { bar: string } } } = {
+    my: { foo: { bar: 'value' } },
+}
 
 export const store = createStore(initialState)
 
-// State can be set with first level auto-generated setters or with store.set
+// State can be set with first level auto-generated 
+// setters or with store.set
 store.set((state) => ({ ...state, newField: 'newField' }))
-store.set({ newField: 'newField' }) // <- By default state is shallowly merged.
-store.set({}, true) // <- Emptying the state with replace: true flag
+// By default state is shallowly merged.
+store.set({ newField: 'newField' })
+// Emptying the state with replace: true flag.
+store.set({}, true)
 ```
 
 ### Overriding getters and setters
 
 ```ts
-const initialState: { point: { x: number; y: number }; rectangle: { a: number; b: number } } = {
-	point: { x: 0, y: 0 },
-	rectangle: { a: 20, b: 10 },
+const initialState: {
+    point: { x: number; y: number }
+    rectangle: { a: number; b: number }
+} = { 
+    point: { x: 0, y: 0 }, 
+    rectangle: { a: 20, b: 10 } 
 }
 
 export const store = createStore(initialState)
-	.extendGetters(({ get }) => ({
-		// get().point refers to the store value
-		myPoint: () => transformToDifferentCoordinates(get().point),
-	}))
-	.extendGetters(({ get }) => ({
-		// get.myPoint() will refer to the already transformed point from the previous getter.
-		// It will override the previous one, but can still accesess anything defined before.
-		myPoint: () => soSomethingWithTransformedPoint(get.myPoint()),
-	}))
-	.restrictState()
+    .extendGetters(({ get }) => ({
+        // get().point refers to the store value
+        myPoint: () => transformToDifferentCoordinates(get().point),
+    }))
+    .extendGetters(({ get }) => ({
+        // get.myPoint() will refer to the already transformed point 
+        // from the previous getter. It will override the previous 
+        // one, but can still accesess anything defined before.
+        myPoint: () => soSomethingWithTransformedPoint(get.myPoint()),
+    }))
+    .restrictState()
 ```
 
 ### Custom equality
 
 ```ts
-const initialState: { rectangle: { a: number; b: number } } = { rectangle: { a: 20, b: 10 } }
+const initialState: { rectangle: { a: number; b: number } } = {
+    rectangle: { a: 20, b: 10 },
+}
 
 export const store = createStore(initialState)
 
 // By default shallow equality is being used.
 function Component() {
-	const rectangle = store.use.rectangle(customEqualityFunction)
+    const rectangle = store.use.rectangle(customEqualityFn)
 }
 ```
 
@@ -233,15 +257,16 @@ function Component() {
 
 ```ts
 function Component() {
-  const dependencyA = store.use.dependencyA()
+    const dependencyA = store.use.dependencyA()
 }
 
-// No need to mock the store or add additional providers, just interact with it
-// in the usual way. Wrapping setter with act might be needed to sync react updates.
+// No need to mock the store or add additional providers, just 
+// interact with it in the usual way. Wrapping setter with act 
+// might be needed to sync react updates.
 test('Testing Component', () => ({
-  render(<Component />)
-  act(() => store.set.dependencyA(someValue))
-  expect(storeDependantText).toBe(someValue)
+    render(<Component />)
+    act(() => store.set.dependencyA(someValue))
+    expect(storeDependantText).toBe(someValue)
 })
 ```
 
@@ -297,21 +322,21 @@ import { StoreApiPlugin } from 'zustand-lite'
 type Setters = { reset: () => void }
 
 export const reset: StoreApiPlugin<{}, {}, Setters> = {
-	extends: (store) => {
-		// If plugin defines data, that and only that data is available inside
-		// setters and getters.
-		return store.extendSetters(({ api, set }) => ({
-			// Every piece od data, getter or setter will be available in the custom
-			// extendGetter and extendSetter, allowing for even more interacctions.
-			reset: () => {
-				set(api.getInitialState?.() ?? {}, true)
-			},
-		}))
-	},
+    extends: (store) => {
+        // If plugin defines data, that and only that data is available inside
+        // setters and getters.
+        return store.extendSetters(({ api, set }) => ({
+            // Every piece od data, getter or setter will be available in the custom
+            // extendGetter and extendSetter, allowing for even more interacctions.
+            reset: () => {
+                set(api.getInitialState?.() ?? {}, true)
+            },
+        }))
+    },
 }
 ```
 
-Apply newlyreated plugin like this:
+Apply newly created plugin like this:
 
 ```ts
 const store = createStore({}, { plugins: [reset] })
@@ -327,13 +352,13 @@ You can enable the most useful middlewares:
 
 ```ts
 {
-  name: 'MyApp/CounterStore',
-  middlewares: {
-    devtools: true,
-    persist: {
-      ...options,
-    },
-  }
+    name: 'MyApp/CounterStore',
+    middlewares: {
+        devtools: true,
+        persist: {
+            ...options,
+        },
+    }
 }
 ```
 
