@@ -78,7 +78,7 @@ export function createStore<S extends State, Plugins extends StoreApiPluginList 
 		extendSetters<Builder extends SettersBuilder<typeof mergedState>>(builder: Builder) {
 			return extendSetters(builder, this)
 		},
-		restrictState<Key extends keyof S>(publicState: Key[] = []) {
+		restrictState(publicState = []) {
 			return restrictState(publicState, mergedState, this)
 		},
 	}

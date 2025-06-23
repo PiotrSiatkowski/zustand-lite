@@ -6,5 +6,6 @@ export function extendSetters<
 	Getters = Default,
 	Setters = Default,
 >(builder: Builder, api: StoreApi<S, Getters, Setters>) {
-	return { ...api, set: { ...api.set, ...builder(api) } }
+	api.set = Object.assign(api.set, builder(api))
+	return api
 }
