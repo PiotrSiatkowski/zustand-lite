@@ -64,31 +64,32 @@ export function createStore<S extends State, Plugins extends StoreApiPluginList 
 	}
 
 	// Create a vanilla zustand store to wrap.
-	const storeApi: any = createVanillaStore(initializer)
+	const storeLib: any = createVanillaStore(initializer)
 
 	// Create zustand-lite wrapper.
-	let store: any = {
-		api: generateApi(storeApi),
-		get: generateGet(storeApi),
-		set: generateSet(storeApi, !!middlewares.devtools),
-		use: generateUse(storeApi),
+	const storeApi: any = {
+		api: generateApi(storeLib),
+		get: generateGet(storeLib),
+		use: generateUse(storeLib),
+		set: generateSet(storeLib, !!middlewares.devtools),
 		extendGetters<Builder extends GettersBuilder<typeof mergedState>>(builder: Builder) {
-			return extendGetters(builder, this, storeApi)
+			return extendGetters(builder, this, storeLib)
 		},
 		extendSetters<Builder extends SettersBuilder<typeof mergedState>>(builder: Builder) {
-			return extendSetters(builder, this)
+			return extendSetters(builder, this, storeLib, !!middlewares.devtools)
 		},
 		restrictState(publicState = []) {
-			return restrictState(publicState, mergedState, this)
+			return restrictState(publicState, mergedState, this, storeLib)
 		},
 	}
 
 	// Extend store getters and setters with plugins.
+	let result = storeApi
 	plugins.forEach((plugin) => {
 		if (plugin.extends) {
-			store = plugin.extends(store)
+			result = plugin.extends(storeApi)
 		}
 	})
 
-	return store
+	return result
 }

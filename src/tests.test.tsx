@@ -198,7 +198,6 @@ describe('Zustand Lite', () => {
 		)
 			.extendGetters((store) => ({
 				invoicePlusArea() {
-					const lol = store.get
 					return store.get().invoice.price + store.get.area()
 				},
 			}))
@@ -356,5 +355,69 @@ describe('Zustand Lite', () => {
 		act(() => store.set((state) => ({ ...state, a: { b: state.a.b + 5 } })))
 		screen.getByText('B:20')
 		expect(renderProbe).toHaveBeenCalledTimes(3)
+	})
+
+	test('Proper functional overriding of previous getters', () => {
+		const store = createStore({ a: { b: 10 }, e: 20 })
+			.extendGetters(({ get }) => ({
+				customGetter() {
+					return get().e
+				},
+			}))
+			.extendGetters(({ get }) => ({
+				customGetter() {
+					return get.customGetter()
+				},
+			}))
+
+		function Component() {
+			renderProbe()
+			return <div>E:{JSON.stringify(store.get.customGetter())}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('E:20')
+	})
+
+	test('Proper functional overriding of previous getters with setters', () => {
+		const store = createStore({ a: { b: 10 }, e: 20 })
+			.extendGetters(({ get }) => ({
+				customGetter() {
+					return get().e + 10
+				},
+			}))
+			.extendSetters(({ get, set }) => ({
+				multiplyEarly() {
+					return set.e(get.customGetter() * 2)
+				},
+			}))
+			.extendGetters(({ get }) => ({
+				customGetter() {
+					return get().e + 30
+				},
+			}))
+			.extendSetters(({ get, set }) => ({
+				multiplyLater() {
+					return set.e(get.customGetter() * 2)
+				},
+			}))
+
+		function Component() {
+			renderProbe()
+			return <div>E:{JSON.stringify(store.use.customGetter())}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('E:50')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+		act(() => store.set.multiplyEarly())
+		screen.getByText('E:90')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+		act(() => store.set.multiplyLater())
+		screen.getByText('E:210')
+		expect(renderProbe).toHaveBeenCalledTimes(3)
+		act(() => store.set.multiplyEarly())
+		screen.getByText('E:410')
+		expect(renderProbe).toHaveBeenCalledTimes(4)
 	})
 })

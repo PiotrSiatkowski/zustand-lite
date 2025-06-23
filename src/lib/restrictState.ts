@@ -1,32 +1,43 @@
+import { StoreApi as StoreLib } from 'zustand/vanilla'
+
 import { GetRecord, SetRecord, State, StoreApi } from '../types'
+import { generateUseFn } from './generateUseFn'
 
 export function restrictState<
 	S extends State,
 	Key extends keyof S,
 	Getters extends GetRecord<any>,
 	Setters extends SetRecord<any>,
->(privateState: Key[], mergedState: S, thisApi: StoreApi<S, Getters, Setters>) {
+>(privateState: Key[], mergedState: S, store: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
 	return {
-		api: thisApi.api,
-		set: thisApi.set,
+		api: store.api,
+		set: store.set,
 		use: privateState
-			? Object.keys(thisApi.use).reduce(
-					(acc, key) =>
-						mergedState[key] && (privateState as string[]).includes(key)
-							? acc
-							: { ...acc, [key]: thisApi.use[key] },
-					{}
-				)
-			: thisApi.use,
-		get: privateState
-			? () =>
-					Object.entries(thisApi.get()).reduce(
-						(acc, [key, val]) =>
+			? (() => {
+					const getters = Object.keys(store.use).reduce(
+						(acc, key) =>
 							mergedState[key] && (privateState as string[]).includes(key)
 								? acc
-								: { ...acc, [key]: val },
+								: { ...acc, [key]: store.use[key] },
 						{}
 					)
-			: thisApi.get,
+
+					return Object.assign(generateUseFn(lib), getters)
+				})()
+			: store.use,
+		get: privateState
+			? (() => {
+					const getFn = () =>
+						Object.entries(store.get()).reduce(
+							(acc, [key, val]) =>
+								mergedState[key] && (privateState as string[]).includes(key)
+									? acc
+									: { ...acc, [key]: val },
+							{}
+						)
+
+					return Object.assign(getFn, store.get)
+				})()
+			: store.get,
 	}
 }

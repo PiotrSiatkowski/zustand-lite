@@ -5,7 +5,7 @@ export function generateUseStep(
 	state: any,
 	getters: any,
 	path: string[],
-	api: any,
+	lib: any,
 ) {
 	if (typeof state === 'object' && state !== null) {
 		Object.keys(state).forEach((key) => {
@@ -13,7 +13,7 @@ export function generateUseStep(
 			Object.defineProperty(getters, key, {
 				value: (equalityFn = shallow) => {
 					return useStoreWithEqualityFn(
-						api,
+						lib,
 						(state) => getFromPath(state, newPath),
 						equalityFn
 					)
@@ -23,7 +23,7 @@ export function generateUseStep(
 				enumerable: true,
 			})
 
-			generateUseStep(state[key], getters[key], newPath, api)
+			generateUseStep(state[key], getters[key], newPath, lib)
 		})
 	}
 }
@@ -31,7 +31,7 @@ export function generateUseStep(
 function getFromPath(state: any, path: string[]) {
 	let data = state
 
-	for (let key of path) {
+	for (const key of path) {
 		data = data[key]
 		if (!data) {
 			return data

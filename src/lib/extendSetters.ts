@@ -1,11 +1,14 @@
+import { StoreApi as StoreLib } from 'zustand/vanilla'
 import { Default, SettersBuilder, State, StoreApi } from '../types'
+import { generateSetFn } from './generateSetFn'
 
 export function extendSetters<
 	Builder extends SettersBuilder<S, Getters, Setters>,
 	S extends State = Default,
 	Getters = Default,
 	Setters = Default,
->(builder: Builder, api: StoreApi<S, Getters, Setters>) {
-	api.set = Object.assign(api.set, builder(api))
-	return api
+>(builder: Builder, store: StoreApi<S, Getters, Setters>, lib: StoreLib<S>, hasDevtools: boolean) {
+	const setters = generateSetFn(lib, hasDevtools)
+	store.set = Object.assign(setters, store.set, builder(store))
+	return store
 }
