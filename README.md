@@ -344,8 +344,6 @@ const store = createStore({}, { plugins: [reset] })
 
 **Any plugin state, getters and setters will be available for usage inside your own store.**
 
----
-
 ## 🧪 Middlewares Integration
 
 You can enable the most useful middlewares:
@@ -375,20 +373,16 @@ You can enable the most useful middlewares:
 - Ability to specify equality function for extended getters. It's possible now, but requires to
   import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with use() function or deep auto-generated selectors. Still no possible for cutom getters)**.
 
----
 
 ## 🧱 Built With
 
 - [Zustand](https://github.com/pmndrs/zustand)
 - Inspired by [zustand-x](https://github.com/udecode/zustand-x)
 
----
-
 ## 📘 License
 
 MIT — free to use, extend, and improve.
 
----
 
 ## 🤝 Contributing
 
@@ -400,5 +394,3 @@ zustand-lite/plugin-*
 ```
 
 or adding them to the main repository under the plugins directory.
-
----

@@ -5,7 +5,7 @@ import { generateUseStep } from './generateUseStep'
 import { generateUseFn } from './generateUseFn'
 
 /**
- * Generates automatic getters like store.use.foo()
+ * Generates automatic store hook subscribe function store.use()
  * @param lib Zustand api interface
  */
 export function generateUse<S extends State>(lib: StoreLib<S>) {

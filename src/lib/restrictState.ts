@@ -3,6 +3,13 @@ import { StoreApi as StoreLib } from 'zustand/vanilla'
 import { GetRecord, SetRecord, State, StoreApi } from '../types'
 import { generateUseFn } from './generateUseFn'
 
+/**
+ * Function that restrict access to the store and store api.
+ * @param privateState Property names to be made private like ['foo', 'bar']
+ * @param mergedState Final state of the store
+ * @param store Returned store API
+ * @param lib Zustand api interface
+ */
 export function restrictState<
 	S extends State,
 	Key extends keyof S,

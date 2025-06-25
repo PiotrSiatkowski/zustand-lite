@@ -1,12 +1,15 @@
 import { shallow } from 'zustand/shallow'
 import { useStoreWithEqualityFn } from 'zustand/traditional'
 
-export function generateUseStep(
-	state: any,
-	getters: any,
-	path: string[],
-	lib: any,
-) {
+/**
+ * Generates automatic getters like store.use.foo() (recursive steps for each level).
+ * Getters are created as side effects.
+ * @param state State at nth level
+ * @param getters Getters at nth level
+ * @param path Property access path at nth level like ['foo', 'bar']
+ * @param lib Zustand api interface
+ */
+export function generateUseStep(state: any, getters: any, path: string[], lib: any) {
 	if (typeof state === 'object' && state !== null) {
 		Object.keys(state).forEach((key) => {
 			const newPath = [...path, key]

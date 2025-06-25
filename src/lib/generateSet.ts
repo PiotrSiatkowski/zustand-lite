@@ -9,10 +9,9 @@ import { generateSetFn } from './generateSetFn'
  * @param hasDevtools If devtools were activated for this store
  */
 export function generateSet<S extends State>(lib: StoreLib<S>, hasDevtools: boolean) {
-	const setters = generateSetFn(lib, hasDevtools)
+	const setters: any = generateSetFn(lib, hasDevtools)
 
 	Object.keys(lib.getState()).forEach((key) => {
-		// @ts-ignore
 		setters[key] = (value: any) => {
 			if (lib.getState()[key] === value) {
 				return
