@@ -7,12 +7,12 @@ import { generateGetFn } from './generateGetFn'
 import { generateUseFn } from './generateUseFn'
 
 export function extendGetters<
-	Builder extends GettersBuilder<S, Getters, Setters>,
+	Builder extends GettersBuilder<S, Getters>,
 	S extends State = Default,
 	Getters = Default,
 	Setters = Default,
 >(builder: Builder, store: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
-	const methods: any = builder(store)
+	const methods: any = builder({ get: store.get })
 	const getters: any = {}
 
 	Object.keys(methods).forEach((key) => {

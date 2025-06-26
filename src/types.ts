@@ -18,7 +18,7 @@ export type StoreApi<S extends State = Empty, Getters = Default, Setters = Defau
 	set: SetRecord<S> & Setters
 	use: UseRecord<S> & Getters
 
-	extendGetters<Builder extends GettersBuilder<S, Getters, Setters>>(
+	extendGetters<Builder extends GettersBuilder<S, Getters>>(
 		builder: Builder
 	): StoreApi<S, Getters & ReturnType<Builder>, Setters>
 
@@ -32,10 +32,8 @@ export type StoreApi<S extends State = Empty, Getters = Default, Setters = Defau
 	): StoreApiEncapsulated<Omit<S, Key>, Getters, Setters>
 }
 
-export type GettersBuilder<S extends State, Getters = Default, Setters = Default> = (args: {
-	api: Omit<StoreApiLib<S>, 'setState' | 'getState'>
+export type GettersBuilder<S extends State, Getters = Default> = (args: {
 	get: GetRecord<S> & Getters
-	set: SetRecord<S> & Setters
 }) => Record<string, (...args: any[]) => any>
 
 export type SettersBuilder<S extends State, Getters = Default, Setters = Default> = (args: {
