@@ -420,4 +420,30 @@ describe('Zustand Lite', () => {
 		screen.getByText('E:410')
 		expect(renderProbe).toHaveBeenCalledTimes(4)
 	})
+
+	test('Proper type for setter override', () => {
+		const store = createStore({ a: 20 })
+			.extendSetters(({ get, set }) => ({
+				multiply(times: number) {
+					return set.a(get().a * times);
+				},
+			}))
+			.extendSetters(({ get, set }) => ({
+				multiply(how: 'two' | 'three') {
+					return set.a(get().a * (how === 'two' ? 2 : 3));
+				},
+			}))
+
+		function Component() {
+			renderProbe()
+			return <div>A:{JSON.stringify(store.use.a())}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('A:20')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+		act(() => store.set.multiply('three'))
+		screen.getByText('A:60')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
 })

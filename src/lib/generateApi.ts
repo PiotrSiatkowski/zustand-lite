@@ -8,5 +8,24 @@ import { State } from '../types'
  * @param lib Zustand api interface
  */
 export function generateApi<S extends State>(lib: StoreLib<S>) {
-	return { getInitialState: lib.getInitialState, subscribe: lib.subscribe }
+	return {
+		getInitialState: lib.getInitialState,
+		persist: augmentPersist(lib),
+		subscribe: lib.subscribe,
+	}
+}
+
+function augmentPersist<S extends State>(lib: StoreLib<S>) {
+	if ('persist' in lib) {
+		const augmented: any = lib.persist
+		augmented.read = () => {
+			try {
+				return JSON.parse(localStorage?.getItem(augmented.name) ?? '')?.state
+			} catch {
+				return undefined
+			}
+		}
+
+		return augmented
+	}
 }

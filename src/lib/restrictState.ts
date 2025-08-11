@@ -1,6 +1,6 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
-import { GetRecord, SetRecord, State, StoreApi } from '../types'
+import { GetRecord, SetRecord, State, StoreApi, UseRecord } from '../types'
 import { generateUseFn } from './generateUseFn'
 
 /**
@@ -25,7 +25,7 @@ export function restrictState<
 						(acc, key) =>
 							mergedState[key] && (privateState as string[]).includes(key)
 								? acc
-								: { ...acc, [key]: store.use[key] },
+								: { ...acc, [key]: (store.use as UseRecord<any>)[key] },
 						{}
 					)
 
