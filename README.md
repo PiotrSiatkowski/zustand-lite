@@ -48,7 +48,6 @@ Thanks to **zustand‑lite**, you can move faster without sacrificing clarity or
 - 🧩 **Optional middlewares**: Seamlessly add devtools and persist middleware layers.
 - 🌱 **Chainable API**: create the store in a few simple composable steps.
 - 👁 **Redux devtools labeling**: Built-in clear, traceable action labeling useful for debugging.
-- 🧼 **No dependencies, only Zustand**: Keeps bundle size small and performance high.
 
 ---
 
@@ -371,7 +370,8 @@ You can enable the most useful middlewares:
 - createPlugin function that will automatically infer types from the usage without the need of
   specifying types yourself, avoiding repetitiveness.
 - Ability to specify equality function for extended getters. It's possible now, but requires to
-  import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with use() function or deep auto-generated selectors. Still no possible for cutom getters)**.
+  import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with 
+  use() function or deep auto-generated selectors. Still no possible for custom getters)**.
 
 
 ## 🧱 Built With

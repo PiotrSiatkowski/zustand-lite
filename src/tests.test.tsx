@@ -425,12 +425,12 @@ describe('Zustand Lite', () => {
 		const store = createStore({ a: 20 })
 			.extendSetters(({ get, set }) => ({
 				multiply(times: number) {
-					return set.a(get().a * times);
+					return set.a(get().a * times)
 				},
 			}))
 			.extendSetters(({ get, set }) => ({
 				multiply(how: 'two' | 'three') {
-					return set.a(get().a * (how === 'two' ? 2 : 3));
+					return set.a(get().a * (how === 'two' ? 2 : 3))
 				},
 			}))
 
@@ -445,5 +445,23 @@ describe('Zustand Lite', () => {
 		act(() => store.set.multiply('three'))
 		screen.getByText('A:60')
 		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
+
+	test('Logs setter name on various occasions', () => {
+		const store = createStore({ count: 20 }).extendSetters(({ get, set }) => ({
+			multiply(times: number) {
+				return set.count(get().count * times)
+			},
+			multiplyWithSet(times: number) {
+				return set.count(get().count * times)
+			},
+		}))
+
+		store.set({ count: 27 })
+		store.set.count(25)
+		store.set.multiply(4)
+		store.set.multiplyWithSet(4)
+
+		// Cannot spy on functions. Tested with logs.
 	})
 })

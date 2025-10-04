@@ -9,6 +9,17 @@ export function extendSetters<
 	Setters = Default,
 >(builder: Builder, store: StoreApi<S, Getters, Setters>, lib: StoreLib<S>, hasDevtools: boolean) {
 	const setters = generateSetFn(lib, hasDevtools)
-	store.set = Object.assign(setters, store.set, builder(store))
+	const baseSet = Object.entries(builder(store)).reduce(
+		(acc, [name, func]) => {
+			acc[name] = function _zustandLiteInferName_(...args: any[]) {
+				return func(...args)
+			}
+
+			return acc
+		},
+		{} as Record<string, any>
+	)
+
+	store.set = Object.assign(setters, store.set, baseSet)
 	return store
 }

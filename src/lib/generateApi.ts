@@ -10,7 +10,9 @@ import { State } from '../types'
 export function generateApi<S extends State>(lib: StoreLib<S>) {
 	return {
 		getInitialState: lib.getInitialState,
+		getState: lib.getState,
 		persist: augmentPersist(lib),
+		setState: lib.setState,
 		subscribe: lib.subscribe,
 	}
 }

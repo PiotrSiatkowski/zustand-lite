@@ -1,6 +1,6 @@
 {
 	"name": "zustand-lite",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "Zustand Lite builds upon zustand, by auto-generating selectors and simplifying API even more.",
 	"author": "Piotr Siatkowski <p.siatkowski@gmail.com>",
 	"license": "MIT",
@@ -42,7 +42,8 @@
 		"test": "jest"
 	},
 	"dependencies": {
-		"zustand": "5.0.5"
+		"zustand": "5.0.5",
+		"error-stack-parser": "2.1.4"
 	},
 	"devDependencies": {
 		"@testing-library/jest-dom": "^6.6.3",

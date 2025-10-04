@@ -136,13 +136,13 @@ export type MWConfiguration = {
 export type StorePersist<S> = {
 	persist: {
 		clearStorage: () => void
-		getOptions: () => Partial<PersistOptions<S, S>>;
+		getOptions: () => Partial<PersistOptions<S, S>>
 		hasHydrated: () => boolean
-		onFinishHydration: (fn: (state: S) => void) => () => void;
-		onHydrate: (fn: (state: S) => void) => () => void;
+		onFinishHydration: (fn: (state: S) => void) => () => void
+		onHydrate: (fn: (state: S) => void) => () => void
 		read: () => S | undefined
 		rehydrate: () => Promise<void> | void
-		setOptions: (options: Partial<PersistOptions<S, S>>) => void;
+		setOptions: (options: Partial<PersistOptions<S, S>>) => void
 	}
 }
 
