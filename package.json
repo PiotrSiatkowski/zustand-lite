@@ -1,6 +1,6 @@
 {
 	"name": "zustand-lite",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "Zustand Lite builds upon zustand, by auto-generating selectors and simplifying API even more.",
 	"author": "Piotr Siatkowski <p.siatkowski@gmail.com>",
 	"license": "MIT",
@@ -23,18 +23,15 @@
 	},
 	"sideEffects": false,
 	"type": "module",
-	"main": "dist/index.js",
-	"module": "dist/index.mjs",
-	"types": "dist/index.d.ts",
 	"files": [
 		"dist/**/*"
 	],
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"import": "./dist/index.mjs",
-			"module": "./dist/index.mjs",
-			"require": "./dist/index.js"
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.js"
 		}
 	},
 	"scripts": {
