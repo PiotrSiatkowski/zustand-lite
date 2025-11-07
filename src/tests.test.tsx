@@ -447,6 +447,34 @@ describe('Zustand Lite', () => {
 		expect(renderProbe).toHaveBeenCalledTimes(2)
 	})
 
+	test('Can listen to multiple values', () => {
+		const store = createStore({ a: 'a', b: 'b', c: 'c', d: 'd' }).extendSetters(
+			({ get, set }) => ({
+				changeA() {
+					return set.a('A')
+				},
+				changeC() {
+					return set.c('C')
+				},
+			})
+		)
+
+		function Component() {
+			renderProbe()
+			return <div>{JSON.stringify(store.use(['a', 'b']))}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('{"a":"a","b":"b"}')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+		act(() => store.set.changeA())
+		screen.getByText('{"a":"A","b":"b"}')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+		act(() => store.set.changeC())
+		screen.getByText('{"a":"A","b":"b"}')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
+
 	test('Logs setter name on various occasions', () => {
 		const store = createStore({ count: 20 }).extendSetters(({ get, set }) => ({
 			multiply(times: number) {

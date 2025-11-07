@@ -194,6 +194,22 @@ function Component() {
 }
 ```
 
+### Multi selectors
+
+```ts
+const initialState = {
+    a: 'a', b: 'b', c: 'c', d: 'd',
+}
+
+export const store = createStore(initialState)
+
+// Listen to multiple properties of the store at the same time
+// for maximal brevity.
+function Component() {
+    const { a, c } = store.use(['a', 'c'])
+}
+```
+
 ### Setting whole state
 
 ```ts
@@ -372,7 +388,9 @@ You can enable the most useful middlewares:
 - Ability to specify equality function for extended getters. It's possible now, but requires to
   import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with 
   use() function or deep auto-generated selectors. Still no possible for custom getters)**.
-
+- Extend state option, to add additional state to the store than can be adjusted in setters and 
+  getters.
+- Higher order automatic devtools messages.
 
 ## 🧱 Built With
 

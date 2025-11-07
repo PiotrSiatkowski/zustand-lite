@@ -68,7 +68,19 @@ export type SetRecord<S extends Record<string, any>> = SetRecordBase<S> & {
 	[K in keyof S]-?: (value: S[K]) => void
 }
 
-export type UseRecordBase<S> = <R>(selector: (state: S) => R, equality?: EqualityChecker<R>) => R
+export type UseRecordBase<S> = {
+	// 1) Array of keys -> Pick<S, K>
+	<K extends readonly (keyof S)[]>(
+		selector: K,
+		equality?: EqualityChecker<Pick<S, K[number]>>
+	): Pick<S, K[number]>
+
+	// 2) Selector function -> R
+	<R>(selector: (state: S) => R, equality?: EqualityChecker<R>): R
+
+	// 3) No selector -> whole state
+	(selector?: undefined, equality?: EqualityChecker<S>): S
+}
 export type UseRecord<S> = UseRecordDeep<S> & UseRecordBase<S>
 
 type UseRecordDeep<S> = {
