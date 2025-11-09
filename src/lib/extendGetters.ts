@@ -11,8 +11,8 @@ export function extendGetters<
 	S extends State = Default,
 	Getters = Default,
 	Setters = Default,
->(builder: Builder, store: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
-	const methods: any = builder({ get: store.get })
+>(builder: Builder, api: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
+	const methods: any = builder({ get: api.get })
 	const getters: any = {}
 
 	Object.keys(methods).forEach((key) => {
@@ -20,7 +20,7 @@ export function extendGetters<
 			useStoreWithEqualityFn(lib, () => methods[key](...args), shallow)
 	})
 
-	store.use = Object.assign(generateUseFn(lib), store.use, getters)
-	store.get = Object.assign(generateGetFn(lib), store.get, methods)
-	return store
+	api.use = Object.assign(generateUseFn(lib), api.use, getters)
+	api.get = Object.assign(generateGetFn(lib), api.get, methods)
+	return api
 }

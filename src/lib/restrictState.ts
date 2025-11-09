@@ -7,7 +7,7 @@ import { generateUseFn } from './generateUseFn'
  * Function that restrict access to the store and store api.
  * @param privateState Property names to be made private like ['foo', 'bar']
  * @param mergedState Final state of the store
- * @param store Returned store API
+ * @param api Returned store API
  * @param lib Zustand api interface
  */
 export function restrictState<
@@ -15,27 +15,27 @@ export function restrictState<
 	Key extends keyof S,
 	Getters extends GetRecord<any>,
 	Setters extends SetRecord<any>,
->(privateState: Key[], mergedState: S, store: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
+>(privateState: Key[], mergedState: S, api: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
 	return {
-		api: store.api,
-		set: store.set,
+		api: api.api,
+		set: api.set,
 		use: privateState
 			? (() => {
-					const getters = Object.keys(store.use).reduce(
+					const getters = Object.keys(api.use).reduce(
 						(acc, key) =>
 							mergedState[key] && (privateState as string[]).includes(key)
 								? acc
-								: { ...acc, [key]: (store.use as UseRecord<any>)[key] },
+								: { ...acc, [key]: (api.use as UseRecord<any>)[key] },
 						{}
 					)
 
 					return Object.assign(generateUseFn(lib), getters)
 				})()
-			: store.use,
+			: api.use,
 		get: privateState
 			? (() => {
 					const getFn = () =>
-						Object.entries(store.get()).reduce(
+						Object.entries(api.get()).reduce(
 							(acc, [key, val]) =>
 								mergedState[key] && (privateState as string[]).includes(key)
 									? acc
@@ -43,8 +43,8 @@ export function restrictState<
 							{}
 						)
 
-					return Object.assign(getFn, store.get)
+					return Object.assign(getFn, api.get)
 				})()
-			: store.get,
+			: api.get,
 	}
 }

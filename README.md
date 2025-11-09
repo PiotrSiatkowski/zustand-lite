@@ -268,6 +268,28 @@ function Component() {
 }
 ```
 
+### Extending state
+
+```ts
+const initialState: { rectangle: { a: number; b: number } } = {
+    rectangle: { a: 20, b: 10 },
+}
+
+export const store = createStore(initialState)
+	.extendByState({ h: 30 })
+	.extendGetters(({ get }) => ({ 
+		volume() {
+			return get().rectangle.a * get().rectange.b * get().h
+		}
+	}))
+
+// By default shallow equality is being used.
+function Component() {
+	store.set.h(50)
+    const rectangle = store.use.volume()
+}
+```
+
 ### Testing features
 
 ```ts
@@ -303,6 +325,9 @@ Creates a typed store with optional plugins and middleware.
 
 ### Chainable Methods
 
+- **`.extendByState(fn | object)`**  
+  Add additional state that can be reused later.
+- 
 - **`.extendGetters(fn)`**  
   Add additional derived getters based on current state.
 
@@ -388,9 +413,6 @@ You can enable the most useful middlewares:
 - Ability to specify equality function for extended getters. It's possible now, but requires to
   import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with 
   use() function or deep auto-generated selectors. Still no possible for custom getters)**.
-- Extend state option, to add additional state to the store than can be adjusted in setters and 
-  getters.
-- Higher order automatic devtools messages.
 
 ## 🧱 Built With
 

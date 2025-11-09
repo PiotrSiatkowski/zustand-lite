@@ -4,10 +4,7 @@ import { useStoreWithEqualityFn } from 'zustand/traditional'
 import { StoreApi as StoreLib } from 'zustand'
 
 import { State } from '../types'
-
-const identity = (arg: any) => arg
-const pick = (obj: Record<string, any>, keys: string[]) =>
-	keys.reduce<Record<string, any>>((acc, k) => (k in obj ? ((acc[k] = obj[k]), acc) : acc), {})
+import { identity, pick } from '../utils/utils'
 
 /**
  * Generates automatic getters like store.use.foo()

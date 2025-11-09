@@ -44,6 +44,11 @@ export type StoreApi<
 		builder: Builder
 	): StoreApi<S, Getters, OverrideSet<Setters, ReturnType<Builder>, S>, ExtraMW>
 
+	extendByState<NS extends State>(patch: NS): StoreApi<Override<S, NS>, Getters, Setters, ExtraMW>
+	extendByState<NS extends State, Builder extends ByStateBuilder<NS, Getters, Setters>>(
+		builder: Builder
+	): StoreApi<Override<S, ReturnType<Builder>>, Getters, Setters, ExtraMW>
+
 	restrictState(): StoreApiEncapsulated<S, Getters, Setters, ExtraMW>
 	restrictState<Key extends keyof S>(
 		publicState: Key[]
@@ -59,6 +64,13 @@ export type SettersBuilder<S extends State, Getters = Default, Setters = Default
 	get: OverrideGet<GetRecord<S>, Getters, S>
 	set: OverrideSet<SetRecord<S>, Setters, S>
 }) => Record<string, (...args: any[]) => void>
+
+export type ByStateBuilder<S extends State, Getters = Default, Setters = Default> = (args: {
+	api: Omit<StoreApiLib<S>, 'setState' | 'getState'>
+	get: OverrideGet<GetRecord<S>, Getters, S>
+	set: OverrideSet<SetRecord<S>, Setters, S>
+	use: OverrideUse<UseRecord<S>, Getters, S>
+}) => Partial<S>
 
 export type GetRecordBase<S extends Record<string, any>> = () => S
 export type GetRecord<S extends Record<string, any>> = GetRecordBase<S>

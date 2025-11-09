@@ -448,16 +448,14 @@ describe('Zustand Lite', () => {
 	})
 
 	test('Can listen to multiple values', () => {
-		const store = createStore({ a: 'a', b: 'b', c: 'c', d: 'd' }).extendSetters(
-			({ get, set }) => ({
-				changeA() {
-					return set.a('A')
-				},
-				changeC() {
-					return set.c('C')
-				},
-			})
-		)
+		const store = createStore({ a: 'a', b: 'b', c: 'c', d: 'd' }).extendSetters(({ set }) => ({
+			changeA() {
+				return set.a('A')
+			},
+			changeC() {
+				return set.c('C')
+			},
+		}))
 
 		function Component() {
 			renderProbe()
@@ -475,13 +473,65 @@ describe('Zustand Lite', () => {
 		expect(renderProbe).toHaveBeenCalledTimes(2)
 	})
 
+	test('Can extend state with plain data', () => {
+		const store = createStore({ a: 'a' }).extendByState({ b: 'b' })
+
+		function Component() {
+			renderProbe()
+			return <div>{store.use.b()}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('b')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+		act(() => store.set.b('c'))
+		screen.getByText('c')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
+
+	test('Can reuse extended state', () => {
+		const store = createStore({ a: 'a' })
+			.extendByState({ b: 'b' })
+			.extendGetters(({ get }) => ({ getB: () => get().b + 'c' }))
+			.extendSetters(({ get, set }) => ({
+				setB: () => {
+					set.b(get().b + 'd')
+				},
+			}))
+
+		function Component() {
+			renderProbe()
+			return <div>{store.use.getB()}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('bc')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+		act(() => store.set.setB())
+		screen.getByText('bdc')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
+
+	test('Can extend state from the current state', () => {
+		const store = createStore({ a: 'a' }).extendByState(({ get }) => ({ b: get().a + 'b' }))
+
+		function Component() {
+			renderProbe()
+			return <div>{store.use.b()}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('ab')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+	})
+
 	test('Logs setter name on various occasions', () => {
 		const store = createStore({ count: 20 }).extendSetters(({ get, set }) => ({
 			multiply(times: number) {
 				return set.count(get().count * times)
 			},
 			multiplyWithSet(times: number) {
-				return set.count(get().count * times)
+				return set({ count: get().count * times })
 			},
 		}))
 

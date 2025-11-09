@@ -7,6 +7,9 @@
  * 2) Generating setters for flat state (1-level deep setters).
  * 3) Automatic devtools messaging.
  * 4) Annotating functions with proper TS types to avoid some bloating and TS frenzy.
+ * 5) Extending getters and setters
+ * 6) Extending state and restricting state
+ * 7) Reuse plugins
  *
  * Idea is to support small store without complicated data reducing (it can be done as well,
  * but may indicate something is not right with the use case itself).
@@ -18,6 +21,7 @@ import {
 	AugmentedApiData,
 	AugmentedGetters,
 	AugmentedSetters,
+	ByStateBuilder,
 	Default,
 	GettersBuilder,
 	GlobalConfig,
@@ -31,6 +35,7 @@ import {
 
 import { extendGetters } from './extendGetters'
 import { extendSetters } from './extendSetters'
+import { extendByState } from './extendByState'
 import { generateApi } from './generateApi'
 import { generateGet } from './generateGet'
 import { generateSet } from './generateSet'
@@ -89,18 +94,22 @@ export function createStore<
 
 	// Create a vanilla zustand store to wrap.
 	const storeLib: any = createVanillaStore(initializer)
+	const isLogger = !!middlewares.devtools
 
 	// Create zustand-lite wrapper.
 	const storeApi: any = {
 		api: generateApi(storeLib),
 		get: generateGet(storeLib),
-		use: generateUse(storeLib),
-		set: generateSet(storeLib, !!middlewares.devtools),
+		use: generateUse(storeLib, Object.keys(mergedState)),
+		set: generateSet(storeLib, Object.keys(mergedState), isLogger),
 		extendGetters<Builder extends GettersBuilder<typeof mergedState>>(builder: Builder) {
 			return extendGetters(builder, this, storeLib)
 		},
 		extendSetters<Builder extends SettersBuilder<typeof mergedState>>(builder: Builder) {
-			return extendSetters(builder, this, storeLib, !!middlewares.devtools)
+			return extendSetters(builder, this, storeLib, isLogger)
+		},
+		extendByState<Builder extends ByStateBuilder<typeof mergedState>>(builder: Builder) {
+			return extendByState(builder, this, storeLib, isLogger)
 		},
 		restrictState(publicState = []) {
 			return restrictState(publicState, mergedState, this, storeLib)
