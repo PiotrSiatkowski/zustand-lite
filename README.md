@@ -1,3 +1,5 @@
+![Zustand Lite Image](./image-small.png)
+
 # 🧠 Zustand Lite
 
 [![npm version](https://img.shields.io/npm/v/zustand-lite?color=blue)](https://www.npmjs.com/package/zustand-lite)
@@ -413,6 +415,7 @@ You can enable the most useful middlewares:
 - Ability to specify equality function for extended getters. It's possible now, but requires to
   import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with 
   use() function or deep auto-generated selectors. Still no possible for custom getters)**.
+- Implement subscribe with selector middleware
 
 ## 🧱 Built With
 

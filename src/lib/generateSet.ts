@@ -1,3 +1,4 @@
+import { shallow } from 'zustand/shallow'
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { SetRecord, State } from '../types'
@@ -15,7 +16,7 @@ export function generateSet<S extends State>(lib: StoreLib<S>, key: string[], lo
 
 	key.forEach((key) => {
 		setters[key] = (value: any) => {
-			if (lib.getState()[key] === value) {
+			if (shallow(lib.getState()[key], value)) {
 				return
 			}
 

@@ -170,4 +170,4 @@ export type StorePersist<S> = {
 	}
 }
 
-export type GlobalConfig = { appName: string; devtools: boolean }
+export type GlobalConfig = { appName: string; logging: boolean }

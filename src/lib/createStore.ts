@@ -42,7 +42,7 @@ import { generateSet } from './generateSet'
 import { generateUse } from './generateUse'
 import { restrictState } from './restrictState'
 
-let config: GlobalConfig = { appName: 'zustand-lite', devtools: false }
+let config: GlobalConfig = { appName: 'zustand-lite', logging: false }
 
 export function setGlobalConfig(newConfig: Partial<GlobalConfig>) {
 	config = { ...config, ...newConfig }
@@ -74,42 +74,41 @@ export function createStore<
 	// Apply supported middlewares.
 	let initializer: any = () => mergedState
 
-	if (middlewares.devtools || config.devtools) {
-		initializer = devtools(
-			initializer,
-			middlewares.devtools === true || (config.devtools && !middlewares.devtools)
-				? { name: config.appName, store: name }
-				: { name: config.appName, store: name, ...middlewares.devtools }
-		)
+	const persistId = `${config.appName.replace(/\s/, '-')}.${name}}`
+	const shouldLog = config.logging || !!middlewares.devtools
+
+	if (shouldLog) {
+		initializer = devtools(initializer, {
+			name: config.appName,
+			store: name,
+			...(typeof middlewares.devtools === 'object' ? middlewares.devtools : {}),
+		})
 	}
 
 	if (middlewares.persist) {
-		initializer = persist(
-			initializer,
-			middlewares.persist === true
-				? { name: `${config.appName.replace(/\s/, '-')}.${name}` }
-				: { name: `${config.appName.replace(/\s/, '-')}.${name}`, ...middlewares.persist }
-		)
+		initializer = persist(initializer, {
+			name: persistId,
+			...(typeof middlewares.persist === 'object' ? middlewares.persist : {}),
+		})
 	}
 
 	// Create a vanilla zustand store to wrap.
 	const storeLib: any = createVanillaStore(initializer)
-	const isLogger = !!middlewares.devtools
 
 	// Create zustand-lite wrapper.
 	const storeApi: any = {
-		api: generateApi(storeLib),
+		api: generateApi(storeLib, persistId),
 		get: generateGet(storeLib),
 		use: generateUse(storeLib, Object.keys(mergedState)),
-		set: generateSet(storeLib, Object.keys(mergedState), isLogger),
+		set: generateSet(storeLib, Object.keys(mergedState), shouldLog),
 		extendGetters<Builder extends GettersBuilder<typeof mergedState>>(builder: Builder) {
 			return extendGetters(builder, this, storeLib)
 		},
 		extendSetters<Builder extends SettersBuilder<typeof mergedState>>(builder: Builder) {
-			return extendSetters(builder, this, storeLib, isLogger)
+			return extendSetters(builder, this, storeLib, shouldLog)
 		},
 		extendByState<Builder extends ByStateBuilder<typeof mergedState>>(builder: Builder) {
-			return extendByState(builder, this, storeLib, isLogger)
+			return extendByState(builder, this, storeLib, shouldLog)
 		},
 		restrictState(publicState = []) {
 			return restrictState(publicState, mergedState, this, storeLib)
