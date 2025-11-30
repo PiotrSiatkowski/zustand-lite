@@ -1,7 +1,9 @@
 import React from 'react'
 import { act, render, screen } from '@testing-library/react'
-import { createStore } from './lib/createStore'
+
 import { StoreApiPlugin } from './types'
+import { definePlugin } from './lib/definePlugin'
+import { createStore } from './lib/createStore'
 
 const renderProbe = jest.fn()
 
@@ -178,19 +180,13 @@ describe('Zustand Lite', () => {
 	})
 
 	test('Applies custom plugin and makes it available for other methods', () => {
-		type ApiState = { side: number }
-		type Getters = { area: () => number }
-
-		const customPlugin: StoreApiPlugin<ApiState, Getters, {}> = {
-			creates: () => ({ side: 3 }),
-			extends: (store) => {
-				return store.extendGetters(({ get }) => ({
-					area: () => {
-						return get().side * get().side
-					},
-				}))
-			},
-		}
+		const customPlugin = definePlugin((store) =>
+			store.extendByState({ side: 3 }).extendGetters(({ get }) => ({
+				area: () => {
+					return get().side * get().side
+				},
+			}))
+		)
 
 		const store = createStore(
 			{ invoice: { price: 10, name: 'invoice' }, sideValue: 'name' },
@@ -208,8 +204,9 @@ describe('Zustand Lite', () => {
 			}))
 
 		function Component() {
+			const lel = store.use.side()
 			renderProbe()
-			return <div>Price: {store.use.invoicePlusArea()}</div>
+			return <div>Price: {lel}</div>
 		}
 
 		render(<Component />)
@@ -541,5 +538,134 @@ describe('Zustand Lite', () => {
 		store.set.multiplyWithSet(4)
 
 		// Cannot spy on functions. Tested with logs.
+	})
+
+	test('Types', () => {
+		const pluginOne: StoreApiPlugin = (store) =>
+			store
+				.extendByState({ one: 1 })
+				.extendSetters(() => ({
+					oneSetter: (oneSetterArg: number) => {
+						console.log(oneSetterArg)
+					},
+				}))
+				.extendGetters(() => ({
+					oneGetter: () => {
+						return 'string'
+					},
+				}))
+
+		const pluginTwo: StoreApiPlugin = (store) =>
+			store
+				.extendByState({ two: 'string' })
+				.extendSetters(({ get }) => ({
+					oneSetter: () => {
+						console.log(get().two)
+					},
+					twoSetter: (twoSetterArg: number) => {
+						console.log(twoSetterArg)
+					},
+				}))
+				.extendGetters(() => ({
+					oneGetter: () => {
+						return true
+					},
+					twoGetter: () => {
+						return 'string'
+					},
+				}))
+
+		const pluginThree = createPlugin((store) =>
+			store
+				.extendByState({ three: 2 })
+				.extendSetters(({ api, set }) => ({
+					threeSetter: () => set(api.getInitialState?.() ?? {}, true),
+				}))
+				.extendGetters(() => ({ threeGetter: () => ['string'] }))
+				.extendByState({ value: 3 })
+		)
+
+		const store1 = createStore({ value: 2 })
+
+		store1.set.value(3)
+		const use1Value = store1.use.value()
+		const get1Value = store1.get().value
+
+		const store2 = createStore({ value: 2 }, { plugins: [pluginOne] })
+
+		store2.set.value(3)
+		const use2Value = store2.use.value()
+		const get2Value = store2.get().value
+		const use2One = store2.use.one()
+		const get2One = store2.get().one
+		const use2Getter = store2.use.oneGetter()
+		const get2Getter = store2.get.oneGetter()
+		store2.set.one(3)
+		store2.set.oneSetter(3)
+
+		const store3 = createStore({ value: 2 }, { plugins: [pluginOne, pluginTwo] })
+
+		store3.set.value(3)
+		const use3Value = store3.use.value()
+		const get3Value = store3.get().value
+		const use3One = store3.use.one()
+		const get3One = store3.get().one
+		const use3Getter = store3.use.one()
+		const get3Getter = store3.get.oneGetter()
+		store3.set.one(3)
+		store3.set.oneSetter()
+		const use3Getter2 = store3.use.two()
+		const get3Getter2 = store3.get.twoGetter()
+		store3.set.two('string')
+		store3.set.twoSetter(3)
+
+		const store4 = createStore({ value: 2 }, { plugins: [pluginOne, pluginTwo, pluginThree] })
+
+		store4.set.value(2)
+		const use4Value = store4.use.value()
+		const get4Value = store4.get().value
+		const use4One = store4.use.one()
+		const get4One = store4.get().one
+		const use4Getter = store4.use.one()
+		const get4Getter = store4.get.oneGetter()
+		store4.set.one(1)
+		store4.set.oneSetter()
+		const use4Getter2 = store4.use.two()
+		const get4Getter2 = store4.get.twoGetter()
+		store4.set.two('string')
+		store4.set.twoSetter(1)
+		store4.set.three(2)
+		const use4Three = store4.use.three()
+		const get4Three = store4.get().three
+		store4.set.threeSetter()
+
+		console.log({
+			use1Value,
+			get1Value,
+			use2Value,
+			get2Value,
+			use2One,
+			get2One,
+			get2Getter,
+			use2Getter,
+			use3Value,
+			get3Value,
+			use3One,
+			get3One,
+			use3Getter,
+			get3Getter,
+			use3Getter2,
+			get3Getter2,
+			use4Value,
+			get4Value,
+			use4One,
+			get4One,
+			use4Getter,
+			get4Getter,
+			use4Getter2,
+			get4Getter2,
+			use4Three,
+			get4Three,
+		})
 	})
 })

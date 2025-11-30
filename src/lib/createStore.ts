@@ -18,24 +18,28 @@ import { devtools, persist } from 'zustand/middleware'
 import { createStore as createVanillaStore } from 'zustand/vanilla'
 
 import {
+	ApplyPlugins,
 	AugmentedApiData,
 	AugmentedGetters,
 	AugmentedSetters,
+	BaseStore,
 	ByStateBuilder,
 	Default,
 	GettersBuilder,
 	GlobalConfig,
 	MWConfiguration,
+	Pluginize,
 	SettersBuilder,
 	State,
 	StoreApi,
-	StoreApiPluginList,
+	StoreApiPlugin,
 	StorePersist,
+	StorePluginFn,
 } from '../types'
 
+import { extendByState } from './extendByState'
 import { extendGetters } from './extendGetters'
 import { extendSetters } from './extendSetters'
-import { extendByState } from './extendByState'
 import { generateApi } from './generateApi'
 import { generateGet } from './generateGet'
 import { generateSet } from './generateSet'
@@ -50,29 +54,24 @@ export function setGlobalConfig(newConfig: Partial<GlobalConfig>) {
 
 export function createStore<
 	S extends State,
-	Plugins extends StoreApiPluginList = [],
 	ExtraMW extends MWConfiguration = {},
+	Plugins extends readonly StorePluginFn[] = [],
 >(
 	initialState: S,
-	options?: { name?: string; plugins?: [...Plugins]; middlewares?: ExtraMW }
-): StoreApi<
-	Plugins extends [] ? S : AugmentedApiData<S, Plugins>,
-	Plugins extends [] ? Default : AugmentedGetters<Plugins>,
-	Plugins extends [] ? Default : AugmentedSetters<Plugins>,
-	ExtraMW extends { persist: any } ? StorePersist<S> : {}
-> {
+	options?: {
+		name?: string
+		// Contextual typing: plugin[0] sees BaseStore<...>, plugin[1] sees output of plugin[0], etc.
+		plugins?: Pluginize<
+			BaseStore<S, ExtraMW extends { persist: any } ? StorePersist<S> : {}>,
+			Plugins
+		>
+		middlewares?: ExtraMW
+	}
+): ApplyPlugins<Plugins, BaseStore<S, ExtraMW extends { persist: any } ? StorePersist<S> : {}>> {
 	const { name = 'zustand-lite', plugins = [], middlewares = {} as ExtraMW } = options ?? {}
 
-	// Merge state from plugins to be available for future use.
-	let mergedState: any = initialState
-	plugins.forEach((plugin) => {
-		if (plugin.creates) {
-			mergedState = { ...mergedState, ...plugin.creates() }
-		}
-	})
-
 	// Apply supported middlewares.
-	let initializer: any = () => mergedState
+	let initializer: any = () => initialState
 
 	const persistId = `${config.appName.replace(/\s/, '-')}.${name}}`
 	const shouldLog = config.logging || !!middlewares.devtools
@@ -99,28 +98,27 @@ export function createStore<
 	const storeApi: any = {
 		api: generateApi(storeLib, persistId),
 		get: generateGet(storeLib),
-		use: generateUse(storeLib, Object.keys(mergedState)),
-		set: generateSet(storeLib, Object.keys(mergedState), shouldLog),
-		extendGetters<Builder extends GettersBuilder<typeof mergedState>>(builder: Builder) {
+		use: generateUse(storeLib, Object.keys(initialState)),
+		set: generateSet(storeLib, Object.keys(initialState), shouldLog),
+		extendGetters<Builder extends GettersBuilder<typeof initialState>>(builder: Builder) {
 			return extendGetters(builder, this, storeLib)
 		},
-		extendSetters<Builder extends SettersBuilder<typeof mergedState>>(builder: Builder) {
+		extendSetters<Builder extends SettersBuilder<typeof initialState>>(builder: Builder) {
 			return extendSetters(builder, this, storeLib, shouldLog)
 		},
-		extendByState<Builder extends ByStateBuilder<typeof mergedState>>(builder: Builder) {
+		extendByState<Builder extends ByStateBuilder<typeof initialState>>(builder: Builder) {
 			return extendByState(builder, this, storeLib, shouldLog)
 		},
 		restrictState(publicState = []) {
-			return restrictState(publicState, mergedState, this, storeLib)
+			return restrictState(publicState, initialState, this, storeLib)
 		},
 	}
 
-	// Extend store getters and setters with plugins.
+	// Extend store getters and setters with plugins. As types are configured right now,
+	// first define plugin should take precedence.
 	let result = storeApi
 	plugins.forEach((plugin) => {
-		if (plugin.extends) {
-			result = plugin.extends(storeApi)
-		}
+		result = plugin(result)
 	})
 
 	return result

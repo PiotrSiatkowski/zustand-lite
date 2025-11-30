@@ -8,10 +8,17 @@ export type Empty = Record<string, never>
 export type Default = Record<string | symbol, any>
 export type EqualityChecker<S> = (state: S, newState: S) => boolean
 
-type Override<T, U> = Omit<T, keyof U> & U
-type OverrideGet<T, U, S extends Record<string, any>> = Override<T, U> & GetRecordBase<S>
-type OverrideSet<T, U, S extends Record<string, any>> = Override<T, U> & SetRecordBase<S>
-type OverrideUse<T, U, S extends Record<string, any>> = Override<T, U> & UseRecordBase<S>
+type IndexKeys<T> =
+	| (string extends keyof T ? string : never)
+	| (number extends keyof T ? number : never)
+	| (symbol extends keyof T ? string : never)
+
+type ExplicitKeys<T> = Exclude<keyof T, IndexKeys<T>>
+
+type Override<T, U> = Omit<T, ExplicitKeys<U>> & U
+export type OverrideGet<T, U, S extends Record<string, any>> = Override<T, U> & GetRecordBase<S>
+export type OverrideSet<T, U, S extends Record<string, any>> = Override<T, U> & SetRecordBase<S>
+export type OverrideUse<T, U, S extends Record<string, any>> = Override<T, U> & UseRecordBase<S>
 
 export type StoreApiEncapsulated<
 	S extends State = Empty,
@@ -112,44 +119,29 @@ type IsOptional<S, K extends keyof S> =
 			: false
 		: false
 
-export type StoreApiPlugin<
-	NewApiData extends State,
-	NewGetters,
-	NewSetters,
-	NewExtraMW = Default,
-> = {
-	creates?: () => NewApiData
-	extends?: (
-		store: StoreApi<NewApiData, NewGetters, NewSetters, NewExtraMW>
-	) => StoreApi<NewApiData, NewGetters, NewSetters, NewExtraMW>
-}
+// A plugin is just a function that receives the current StoreApi and returns an extended StoreApi.
+// It's generic so it adapts to whatever store shape it's given.
+export type StoreApiPlugin = <
+	I extends StoreApi<any, any, any, any>,
+	O extends StoreApi<any, any, any, any>,
+>(
+	store: I
+) => O
 
-export type StoreApiPluginList = StoreApiPlugin<any, any, any, any>[]
+export type AugmentedApiData<S, Plugins extends StoreApiPlugin[]> = S &
+	UnionToIntersection<ReturnType<Plugins[number]>>
 
-export type AugmentedApiData<S, Plugins extends StoreApiPluginList> = S &
-	UnionToIntersection<ExtractPluginTypes<Plugins, 'create'>[number]>
-
-export type AugmentedGetters<Plugins extends StoreApiPluginList> = UnionToIntersection<
-	ExtractPluginTypes<Plugins, 'extend'>[number]['getters']
+export type AugmentedGetters<Plugins extends StoreApiPlugin[]> = UnionToIntersection<
+	ReturnType<Plugins[number]>['get']
 >
 
-export type AugmentedSetters<Plugins extends StoreApiPluginList> = UnionToIntersection<
-	ExtractPluginTypes<Plugins, 'extend'>[number]['setters']
+export type AugmentedSetters<Plugins extends StoreApiPlugin[]> = UnionToIntersection<
+	ReturnType<Plugins[number]>['set']
 >
 
 type UnionToIntersection<S> = (S extends any ? (k: S) => void : never) extends (k: infer I) => void
 	? I
 	: never
-
-type ExtractPluginTypes<Plugins extends StoreApiPluginList, Key extends 'create' | 'extend'> = {
-	[K in keyof Plugins]: Plugins[K] extends StoreApiPlugin<infer S, infer G, infer A>
-		? Key extends 'create'
-			? S
-			: Key extends 'extend'
-				? { getters: G; setters: A }
-				: never
-		: never
-}
 
 export type MWConfiguration = {
 	devtools?: true | Omit<DevtoolsOptions, 'store'>
