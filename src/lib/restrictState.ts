@@ -5,6 +5,7 @@ import { generateUseFn } from './generateUseFn'
 
 /**
  * Function that restrict access to the store and store api.
+ *
  * @param privateState Property names to be made private like ['foo', 'bar']
  * @param mergedState Final state of the store
  * @param api Returned store API

@@ -8,6 +8,7 @@ import { identity, pick } from '../utils/utils'
 
 /**
  * Generates automatic getters like store.use.foo()
+ *
  * @param lib Zustand api interface
  */
 export function generateUseFn<S extends State, U>(lib: StoreLib<S>) {

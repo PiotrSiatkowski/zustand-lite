@@ -7,6 +7,7 @@ import { pick } from '../utils/utils'
 
 /**
  * Generates automatic store hook subscribe function store.use()
+ *
  * @param lib Zustand api interface
  * @param key State keys to use
  */

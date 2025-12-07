@@ -18,23 +18,13 @@ import { devtools, persist } from 'zustand/middleware'
 import { createStore as createVanillaStore } from 'zustand/vanilla'
 
 import {
-	ApplyPlugins,
-	AugmentedApiData,
-	AugmentedGetters,
-	AugmentedSetters,
-	BaseStore,
-	ByStateBuilder,
-	Default,
-	GettersBuilder,
+	GetRecord,
 	GlobalConfig,
 	MWConfiguration,
-	Pluginize,
-	SettersBuilder,
+	SetRecord,
 	State,
 	StoreApi,
-	StoreApiPlugin,
 	StorePersist,
-	StorePluginFn,
 } from '../types'
 
 import { extendByState } from './extendByState'
@@ -52,23 +42,16 @@ export function setGlobalConfig(newConfig: Partial<GlobalConfig>) {
 	config = { ...config, ...newConfig }
 }
 
-export function createStore<
-	S extends State,
-	ExtraMW extends MWConfiguration = {},
-	Plugins extends readonly StorePluginFn[] = [],
->(
+export function createStore<S extends State, ExtraMW extends MWConfiguration = {}>(
 	initialState: S,
-	options?: {
-		name?: string
-		// Contextual typing: plugin[0] sees BaseStore<...>, plugin[1] sees output of plugin[0], etc.
-		plugins?: Pluginize<
-			BaseStore<S, ExtraMW extends { persist: any } ? StorePersist<S> : {}>,
-			Plugins
-		>
-		middlewares?: ExtraMW
-	}
-): ApplyPlugins<Plugins, BaseStore<S, ExtraMW extends { persist: any } ? StorePersist<S> : {}>> {
-	const { name = 'zustand-lite', plugins = [], middlewares = {} as ExtraMW } = options ?? {}
+	options?: { name?: string; middlewares?: ExtraMW }
+): StoreApi<
+	S,
+	GetRecord<S>,
+	SetRecord<S>,
+	ExtraMW extends { persist: any } ? StorePersist<S> : {}
+> {
+	const { name = 'zustand-lite', middlewares = {} as ExtraMW } = options ?? {}
 
 	// Apply supported middlewares.
 	let initializer: any = () => initialState
@@ -95,31 +78,25 @@ export function createStore<
 	const storeLib: any = createVanillaStore(initializer)
 
 	// Create zustand-lite wrapper.
-	const storeApi: any = {
+	return {
 		api: generateApi(storeLib, persistId),
 		get: generateGet(storeLib),
 		use: generateUse(storeLib, Object.keys(initialState)),
 		set: generateSet(storeLib, Object.keys(initialState), shouldLog),
-		extendGetters<Builder extends GettersBuilder<typeof initialState>>(builder: Builder) {
+		composePlugin(plugin) {
+			return plugin(this)
+		},
+		extendGetters(builder) {
 			return extendGetters(builder, this, storeLib)
 		},
-		extendSetters<Builder extends SettersBuilder<typeof initialState>>(builder: Builder) {
+		extendSetters(builder) {
 			return extendSetters(builder, this, storeLib, shouldLog)
 		},
-		extendByState<Builder extends ByStateBuilder<typeof initialState>>(builder: Builder) {
+		extendByState(builder) {
 			return extendByState(builder, this, storeLib, shouldLog)
 		},
 		restrictState(publicState = []) {
 			return restrictState(publicState, initialState, this, storeLib)
 		},
-	}
-
-	// Extend store getters and setters with plugins. As types are configured right now,
-	// first define plugin should take precedence.
-	let result = storeApi
-	plugins.forEach((plugin) => {
-		result = plugin(result)
-	})
-
-	return result
+	} as any
 }

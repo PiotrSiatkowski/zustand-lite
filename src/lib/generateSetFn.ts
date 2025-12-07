@@ -6,6 +6,7 @@ import { generateSetterName } from './generateSetterName'
 
 /**
  * Generates automatic setState function for store like store.set({ value })
+ *
  * @param lib Zustand api interface
  * @param log If devtools were activated for this store
  */

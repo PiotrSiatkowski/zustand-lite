@@ -4,6 +4,7 @@ import { useStoreWithEqualityFn } from 'zustand/traditional'
 /**
  * Generates automatic getters like store.use.foo() (recursive steps for each level).
  * Getters are created as side effects.
+ *
  * @param state State at nth level
  * @param getters Getters at nth level
  * @param path Property access path at nth level like ['foo', 'bar']

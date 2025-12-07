@@ -1,12 +1,20 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
-import { Default, SettersBuilder, State, StoreApi } from '../types'
+import { SettersBuilder, State, StoreApi } from '../types'
 import { generateSetFn } from './generateSetFn'
 
+/**
+ * Adds custom setter methods to the store.
+ *
+ * @param builder  Function returning new setter methods.
+ * @param api      Store API to extend.
+ * @param lib      Underlying Zustand store.
+ * @param log      Enables optional debug logging.
+ */
 export function extendSetters<
 	Builder extends SettersBuilder<S, Getters, Setters>,
-	S extends State = Default,
-	Getters = Default,
-	Setters = Default,
+	S extends State,
+	Getters,
+	Setters,
 >(builder: Builder, api: StoreApi<S, Getters, Setters>, lib: StoreLib<S>, log: boolean) {
 	const setters = generateSetFn(lib, log)
 	const baseSet = Object.entries(builder(api)).reduce(

@@ -7,6 +7,7 @@ import { generateSetterName } from './generateSetterName'
 
 /**
  * Generates automatic setters like store.set.foo(value)
+ *
  * @param lib Zustand api interface
  * @param key Keys to generate setters for
  * @param log If devtools were activated for this store

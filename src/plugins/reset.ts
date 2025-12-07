@@ -1,11 +1,12 @@
-import { StoreApiPlugin } from '../types'
+import { definePlugin } from '../lib/definePlugin'
 
 /**
  * Basic plugin example, that extends store with custom setter.
  */
-export const reset: StoreApiPlugin = (store) =>
+export const withReset = definePlugin((store) =>
 	store.extendSetters(({ api, set }) => ({
 		reset: () => {
 			set(api.getInitialState?.() ?? {}, true)
 		},
 	}))
+)

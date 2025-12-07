@@ -315,27 +315,25 @@ test('Testing Component', () => ({
 
 ### `createStore(initialState, options)`
 
-Creates a typed store with optional plugins and middleware.
+Creates a typed store with your state and optional middleware.
 
 **Options:**
 
 | Key           | Type                                                                       | Description                          |
 | ------------- | -------------------------------------------------------------------------- | ------------------------------------ |
 | `name`        | `string`                                                                   | Name shown in Redux DevTools         |
-| `plugins`     | `StoreApiPlugin[]`                                                         | Array of plugins to extend the store |
 | `middlewares` | `{ devtools?: true or DevtoolsOptions, persist?: true or PersistOptions }` | Middleware configuration             |
 
 ### Chainable Methods
 
 - **`.extendByState(fn | object)`**  
   Add additional state that can be reused later.
-- 
 - **`.extendGetters(fn)`**  
   Add additional derived getters based on current state.
-
 - **`.extendSetters(fn)`**  
   Add additional typed setters.
-
+- **`.composePlugin(plugin)`**  
+  Composes functionality of existing plugin ito your own store.
 - **`.restrictState(keys?: string[])`**  
   Hide selected fields from the public API, returning a minimal store (removes config methods as well).
 
@@ -359,29 +357,32 @@ After creation, your store includes:
 You can define plugins that inject additional state or behavior:
 
 ```ts
-import { StoreApiPlugin } from 'zustand-lite'
+import { definePlugin } from 'zustand-lite'
 
-type Setters = { reset: () => void }
-
-export const reset: StoreApiPlugin<{}, {}, Setters> = {
-    extends: (store) => {
-        // If plugin defines data, that and only that data is available inside
-        // setters and getters.
-        return store.extendSetters(({ api, set }) => ({
-            // Every piece od data, getter or setter will be available in the custom
-            // extendGetter and extendSetter, allowing for even more interacctions.
-            reset: () => {
-                set(api.getInitialState?.() ?? {}, true)
-            },
-        }))
-    },
-}
+export const withMyPlugin = definePlugin((store) =>
+	// If plugin defines data, that and only that data is available inside
+	// setters and getters.
+	store
+		.extendByState({ side: 1 })
+		.extendGetters(({ get }) => ({
+			// Every piece od data, getter or setter will be available in the custom
+			// extendGetter and extendSetter, allowing for even more interactions.
+			area() {
+				return get().side * get().side
+			},
+		}))
+		.extendSetters(({ set }) => ({
+			area(area: number) {
+				return set.side(Math.sqrt(area))
+			},
+		}))
+)
 ```
 
 Apply newly created plugin like this:
 
 ```ts
-const store = createStore({}, { plugins: [reset] })
+const store = createStore({}).composePlugin(withMyPlugin)
 ```
 
 **Any plugin state, getters and setters will be available for usage inside your own store.**
@@ -410,8 +411,6 @@ You can enable the most useful middlewares:
   structured data is important. For deeper properties it might be more convenient to auto
   generate getters and setters for deeply nested properties as well. **(partially done with hooks, entire
   state is selected for get from version 3.0.0, setters still generated for level one only)**
-- createPlugin function that will automatically infer types from the usage without the need of
-  specifying types yourself, avoiding repetitiveness.
 - Ability to specify equality function for extended getters. It's possible now, but requires to
   import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with 
   use() function or deep auto-generated selectors. Still no possible for custom getters)**.

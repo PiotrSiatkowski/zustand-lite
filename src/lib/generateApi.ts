@@ -5,6 +5,7 @@ import { State } from '../types'
 /**
  * Required to wrap original Zustand interface without getState and setState, which are handled
  * by get and set (we should allow only one way of doing certain things).
+ *
  * @param lib Zustand api interface
  * @param key Zustand persist local storage key
  */

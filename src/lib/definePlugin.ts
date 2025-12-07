@@ -1,15 +1,10 @@
-import { OverrideGet, OverrideSet, State, StoreApi, StoreApiPlugin } from '../types'
+import { State, StoreApi } from '../types'
 
-type UnwrapOverrideSet<T> = T extends OverrideSet<{}, infer U, {}> ? U : T
-type UnwrapOverrideGet<T> = T extends OverrideGet<{}, infer U, {}> ? U : T
-
-type ExtractGetters<T> = T extends StoreApi<{}, infer G, {}> ? UnwrapOverrideGet<G> : never
-type ExtractSetters<T> = T extends StoreApi<{}, {}, infer S> ? UnwrapOverrideSet<S> : never
-
-// Implementation
-export function definePlugin<
-	In extends StoreApi<any, any, any, any>,
-	Out extends StoreApi<any, any, any, any>,
->(p: (store: In) => Out): (store: In) => Out {
-	return p
+/**
+ * Identity helper that provides a typed `store` param and preserves the plugin's return type.
+ */
+export function definePlugin<F extends (store: StoreApi) => StoreApi>(fn: F) {
+	return fn as unknown as <S extends State, G, A, MW>(
+		store: StoreApi<S, G, A, MW>
+	) => ReturnType<F>
 }
