@@ -3,16 +3,26 @@
 import { StoreApi as StoreApiLib } from 'zustand'
 import { DevtoolsOptions, PersistOptions } from 'zustand/middleware'
 
-export type State = Record<string | symbol, unknown>
+export type State = Record<PropertyKey, unknown>
 export type EqualityChecker<S> = (state: S, newState: S) => boolean
 
-export type Merge<T, U> = {
-	[K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never
-}
+export type Prettify<T> = { [K in keyof T]: T[K] } & {}
+export type Override<T, U> = Prettify<Omit<T, keyof U> & U>
+export type Augments<T, U, Base> = Base & Override<T, U>
+export type StoreLib<S> = Omit<StoreApiLib<S>, 'setState' | 'getState'>
 
-export type OverrideGet<T, U, S extends Record<string, any>> = GetRecordBase<S> & Merge<T, U>
-export type OverrideSet<T, U, S extends Record<string, any>> = SetRecordBase<S> & Merge<T, U>
-export type OverrideUse<T, U, S extends Record<string, any>> = UseRecordBase<S> & Merge<T, U>
+export type GetBase<S extends State> = () => Readonly<S>
+export type SetBase<S extends State> = StoreApiLib<S>['setState']
+export type UseBase<S extends State> = UseRecordBase<S>
+
+export type OverrideGet<T, U, S extends State> = Augments<T, U, GetBase<S>>
+export type OverrideSet<T, U, S extends State> = Augments<T, U, SetBase<S>>
+export type OverrideUse<T, U, S extends State> = Augments<T, U, UseBase<S>>
+
+export type GetRecord<S extends Record<string, unknown>> = GetBase<S>
+export type SetRecord<S extends Record<string, unknown>> = SetBase<S> & {
+	[K in keyof S]-?: (value: S[K]) => void
+}
 
 export type StoreApiEncapsulated<S extends State = {}, Getters = {}, Setters = {}, ExtraMW = {}> = {
 	api: StoreApiLib<S> & ExtraMW
@@ -22,7 +32,7 @@ export type StoreApiEncapsulated<S extends State = {}, Getters = {}, Setters = {
 }
 
 export type StoreApi<S extends State = {}, Getters = {}, Setters = {}, ExtraMW = {}> = {
-	api: Omit<StoreApiLib<S>, 'setState' | 'getState'> & ExtraMW
+	api: StoreLib<S> & ExtraMW
 	get: OverrideGet<GetRecord<S>, Getters, S>
 	set: OverrideSet<SetRecord<S>, Setters, S>
 	use: OverrideUse<UseRecord<S>, Getters, S>
@@ -38,9 +48,9 @@ export type StoreApi<S extends State = {}, Getters = {}, Setters = {}, ExtraMW =
 		store: StoreApi<S, Getters, Setters, ExtraMW>
 	) => StoreApi<infer S2, infer G2, infer A2, ExtraMW>
 		? StoreApi<
-				Merge<S, S2>, // merge state
-				Merge<Getters, G2>, // merge getters (aware of new S)
-				Merge<Setters, A2>, // merge setters (aware of new S)
+				Override<S, S2>, // merge state
+				Override<Getters, G2>, // merge getters (aware of new S)
+				Override<Setters, A2>, // merge setters (aware of new S)
 				ExtraMW // keep middleware slot
 			>
 		: never
@@ -54,11 +64,11 @@ export type StoreApi<S extends State = {}, Getters = {}, Setters = {}, ExtraMW =
 
 	extendGetters<Builder extends GettersBuilder<S, Getters>>(
 		builder: Builder
-	): StoreApi<S, Merge<Getters, ReturnType<Builder>>, Setters, ExtraMW>
+	): StoreApi<S, Override<Getters, ReturnType<Builder>>, Setters, ExtraMW>
 
 	extendSetters<Builder extends SettersBuilder<S, Getters, Setters>>(
 		builder: Builder
-	): StoreApi<S, Getters, Merge<Setters, ReturnType<Builder>>, ExtraMW>
+	): StoreApi<S, Getters, Override<Setters, ReturnType<Builder>>, ExtraMW>
 
 	restrictState(): StoreApiEncapsulated<S, Getters, Setters, ExtraMW>
 	restrictState<Key extends keyof S>(
@@ -71,7 +81,7 @@ export type GettersBuilder<S extends State, Getters> = (args: {
 }) => Record<string, (...args: any[]) => any>
 
 export type SettersBuilder<S extends State, Getters = {}, Setters = {}> = (args: {
-	api: Omit<StoreApiLib<S>, 'setState' | 'getState'>
+	api: StoreLib<S>
 	get: OverrideGet<GetRecord<S>, Getters, S>
 	set: OverrideSet<SetRecord<S>, Setters, S>
 }) => Record<string, (...args: any[]) => void>
@@ -80,26 +90,18 @@ export type ByStateBuilder<NS extends State, S extends State, Getters = {}> = (a
 	get: OverrideGet<GetRecord<S>, Getters, S>
 }) => NoOverlappingKeys<S, NS>
 
-export type GetRecordBase<S extends Record<string, any>> = () => S
-export type GetRecord<S extends Record<string, any>> = GetRecordBase<S>
-
-export type SetRecordBase<S extends Record<string, any>> = StoreApiLib<S>['setState']
-export type SetRecord<S extends Record<string, any>> = SetRecordBase<S> & {
-	[K in keyof S]-?: (value: S[K]) => void
-}
-
 export type UseRecordBase<S> = {
 	// 1) Array of keys -> Pick<S, K>
 	<K extends readonly (keyof S)[]>(
 		selector: K,
 		equality?: EqualityChecker<Pick<S, K[number]>>
-	): Pick<S, K[number]>
+	): Readonly<Pick<S, K[number]>>
 
 	// 2) Selector function -> R
 	<R>(selector: (state: S) => R, equality?: EqualityChecker<R>): R
 
 	// 3) No selector -> whole state
-	(selector?: undefined, equality?: EqualityChecker<S>): S
+	(selector?: undefined, equality?: EqualityChecker<Readonly<S>>): Readonly<S>
 }
 export type UseRecord<S> = UseRecordDeep<S> & UseRecordBase<S>
 
