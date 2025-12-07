@@ -1,6 +1,6 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 import { SettersBuilder, State, StoreApi } from '../types'
-import { generateSetFn } from './generateSetFn'
+import { generateSetFnBase } from './generateSetFnBase'
 
 /**
  * Adds custom setter methods to the store.
@@ -16,7 +16,7 @@ export function extendSetters<
 	Getters,
 	Setters,
 >(builder: Builder, api: StoreApi<S, Getters, Setters>, lib: StoreLib<S>, log: boolean) {
-	const setters = generateSetFn(lib, log)
+	const setters = generateSetFnBase(lib, log)
 	const baseSet = Object.entries(builder(api)).reduce(
 		(acc, [name, func]) => {
 			acc[name] = function _zustandLiteInferName_(...args: any[]) {

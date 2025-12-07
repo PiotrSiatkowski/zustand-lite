@@ -1,7 +1,7 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { GetRecord, SetRecord, State, StoreApi, UseRecord } from '../types'
-import { generateUseFn } from './generateUseFn'
+import { generateUseFnBase } from './generateUseFnBase'
 
 /**
  * Function that restrict access to the store and store api.
@@ -30,7 +30,7 @@ export function restrictState<
 						{}
 					)
 
-					return Object.assign(generateUseFn(lib), getters)
+					return Object.assign(generateUseFnBase(lib), getters)
 				})()
 			: api.use,
 		get: privateState

@@ -6,17 +6,13 @@ import { DevtoolsOptions, PersistOptions } from 'zustand/middleware'
 export type State = Record<string | symbol, unknown>
 export type EqualityChecker<S> = (state: S, newState: S) => boolean
 
-type IndexKeys<T> =
-	| (string extends keyof T ? string : never)
-	| (number extends keyof T ? number : never)
-	| (symbol extends keyof T ? string : never)
+export type Merge<T, U> = {
+	[K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never
+}
 
-export type ExplicitKeys<T> = Exclude<keyof T, IndexKeys<T>>
-
-export type Override<T, U> = Omit<T, ExplicitKeys<U>> & U
-export type OverrideGet<T, U, S extends Record<string, any>> = GetRecordBase<S> & Override<T, U>
-export type OverrideSet<T, U, S extends Record<string, any>> = SetRecordBase<S> & Override<T, U>
-export type OverrideUse<T, U, S extends Record<string, any>> = UseRecordBase<S> & Override<T, U>
+export type OverrideGet<T, U, S extends Record<string, any>> = GetRecordBase<S> & Merge<T, U>
+export type OverrideSet<T, U, S extends Record<string, any>> = SetRecordBase<S> & Merge<T, U>
+export type OverrideUse<T, U, S extends Record<string, any>> = UseRecordBase<S> & Merge<T, U>
 
 export type StoreApiEncapsulated<S extends State = {}, Getters = {}, Setters = {}, ExtraMW = {}> = {
 	api: StoreApiLib<S> & ExtraMW
@@ -42,25 +38,27 @@ export type StoreApi<S extends State = {}, Getters = {}, Setters = {}, ExtraMW =
 		store: StoreApi<S, Getters, Setters, ExtraMW>
 	) => StoreApi<infer S2, infer G2, infer A2, ExtraMW>
 		? StoreApi<
-				Override<S, S2>, // merge state
-				Override<Getters, G2>, // merge getters (aware of new S)
-				Override<Setters, A2>, // merge setters (aware of new S)
+				Merge<S, S2>, // merge state
+				Merge<Getters, G2>, // merge getters (aware of new S)
+				Merge<Setters, A2>, // merge setters (aware of new S)
 				ExtraMW // keep middleware slot
 			>
 		: never
 
-	extendByState<NS extends State>(patch: NS): StoreApi<Override<S, NS>, Getters, Setters, ExtraMW>
+	extendByState<NS extends State>(
+		patch: NoOverlappingKeys<S, NS>
+	): StoreApi<S & NS, Getters, Setters, ExtraMW>
 	extendByState<NS extends State, Builder extends ByStateBuilder<NS, S, Getters>>(
-		builder: Builder
-	): StoreApi<Override<S, ReturnType<Builder>>, Getters, Setters, ExtraMW>
+		builder: ByStateBuilder<NS, S, Getters>
+	): StoreApi<S & ReturnType<Builder>, Getters, Setters, ExtraMW>
 
 	extendGetters<Builder extends GettersBuilder<S, Getters>>(
 		builder: Builder
-	): StoreApi<S, Override<Getters, ReturnType<Builder>>, Setters, ExtraMW>
+	): StoreApi<S, Merge<Getters, ReturnType<Builder>>, Setters, ExtraMW>
 
 	extendSetters<Builder extends SettersBuilder<S, Getters, Setters>>(
 		builder: Builder
-	): StoreApi<S, Getters, Override<Setters, ReturnType<Builder>>, ExtraMW>
+	): StoreApi<S, Getters, Merge<Setters, ReturnType<Builder>>, ExtraMW>
 
 	restrictState(): StoreApiEncapsulated<S, Getters, Setters, ExtraMW>
 	restrictState<Key extends keyof S>(
@@ -80,7 +78,7 @@ export type SettersBuilder<S extends State, Getters = {}, Setters = {}> = (args:
 
 export type ByStateBuilder<NS extends State, S extends State, Getters = {}> = (args: {
 	get: OverrideGet<GetRecord<S>, Getters, S>
-}) => NS
+}) => NoOverlappingKeys<S, NS>
 
 export type GetRecordBase<S extends Record<string, any>> = () => S
 export type GetRecord<S extends Record<string, any>> = GetRecordBase<S>
@@ -121,6 +119,8 @@ type IsOptional<S, K extends keyof S> =
 			? true // It's optional
 			: false
 		: false
+
+type NoOverlappingKeys<Old, New> = keyof Old & keyof New extends never ? New : never
 
 export type MWConfiguration = {
 	devtools?: true | Omit<DevtoolsOptions, 'store'>

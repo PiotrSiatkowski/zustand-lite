@@ -3,8 +3,8 @@ import { useStoreWithEqualityFn } from 'zustand/traditional'
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { GettersBuilder, State, StoreApi } from '../types'
-import { generateGetFn } from './generateGetFn'
-import { generateUseFn } from './generateUseFn'
+import { generateGetFnBase } from './generateGetFnBase'
+import { generateUseFnBase } from './generateUseFnBase'
 
 /**
  * Adds derived getters to the store.
@@ -27,7 +27,7 @@ export function extendGetters<
 			useStoreWithEqualityFn(lib, () => methods[key](...args), shallow)
 	})
 
-	api.use = Object.assign(generateUseFn(lib), api.use, getters)
-	api.get = Object.assign(generateGetFn(lib), api.get, methods)
+	api.use = Object.assign(generateUseFnBase(lib), api.use, getters)
+	api.get = Object.assign(generateGetFnBase(lib), api.get, methods)
 	return api
 }

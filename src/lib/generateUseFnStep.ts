@@ -10,7 +10,7 @@ import { useStoreWithEqualityFn } from 'zustand/traditional'
  * @param path Property access path at nth level like ['foo', 'bar']
  * @param lib Zustand api interface
  */
-export function generateUseStep(state: any, getters: any, path: string[], lib: any) {
+export function generateUseFnStep(state: any, getters: any, path: string[], lib: any) {
 	if (typeof state === 'object' && state !== null) {
 		Object.keys(state).forEach((key) => {
 			const newPath = [...path, key]
@@ -27,7 +27,7 @@ export function generateUseStep(state: any, getters: any, path: string[], lib: a
 				enumerable: true,
 			})
 
-			generateUseStep(state[key], getters[key], newPath, lib)
+			generateUseFnStep(state[key], getters[key], newPath, lib)
 		})
 	}
 }

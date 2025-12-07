@@ -1,12 +1,12 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 import { ByStateBuilder, State, StoreApi } from '../types'
-import { generateSet } from './generateSet'
-import { generateUse } from './generateUse'
+import { generateSetFn } from './generateSetFn'
+import { generateUseFn } from './generateUseFn'
 
 /**
  * Extends the store by adding new state fields, either by:
  *   - passing an object patch:  `{ b: 'x' }`
- *   - or using a builder:      `({ get }) => ({ c: get().b + 'y' })`
+ *   - or using a builder:       `({ get }) => ({ c: get().b + 'y' })`
  *
  * @param builder  Object patch or function producing new state fields.
  * @param api      The extended store API before widening.
@@ -34,8 +34,8 @@ export function extendByState<
 	lib.setState(newState as unknown as OldData)
 
 	// Generate basic getters and setters from the newly added record.
-	api.use = { ...api.use, ...generateUse(lib, Object.keys(newState)) }
-	api.set = { ...api.set, ...generateSet(lib, Object.keys(newState), log) }
+	api.use = { ...api.use, ...generateUseFn(lib, Object.keys(newState)) }
+	api.set = { ...api.set, ...generateSetFn(lib, Object.keys(newState), log) }
 
 	// Return the same object, but with widened state type (handled by overloads).
 	return api

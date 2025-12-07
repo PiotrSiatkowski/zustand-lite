@@ -1,29 +1,34 @@
 import { shallow } from 'zustand/shallow'
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
-import { State } from '../types'
+import { SetRecord, State } from '../types'
+import { generateSetFnBase } from './generateSetFnBase'
 import { generateSetterName } from './generateSetterName'
 
 /**
- * Generates automatic setState function for store like store.set({ value })
+ * Generates automatic setters like store.set.foo(value)
  *
  * @param lib Zustand api interface
+ * @param key Keys to generate setters for
  * @param log If devtools were activated for this store
  */
-export function generateSetFn<S extends State>(lib: StoreLib<S>, log: boolean) {
-	return (updater: S | ((state: S) => S), replace?: boolean, name?: string) => {
-		const current = lib.getState()
-		const payload = typeof updater === 'function' ? updater(current) : updater
+export function generateSetFn<S extends State>(lib: StoreLib<S>, key: string[], log: boolean) {
+	const setters: any = generateSetFnBase(lib, log)
 
-		if (shallow(current, payload)) {
-			return
+	key.forEach((key) => {
+		setters[key] = (value: any) => {
+			if (shallow(lib.getState()[key], value)) {
+				return
+			}
+
+			lib.setState(
+				(state) => ({ ...state, [key]: value }),
+				false,
+				// @ts-ignore Additional parameter will have no effect even if logging is disabled.
+				log ? { type: generateSetterName() ?? key, payload: { [key]: value } } : undefined
+			)
 		}
+	})
 
-		lib.setState(
-			payload,
-			replace,
-			// @ts-ignore Additional parameter will have no effect even if logging is disabled.
-			log ? { type: generateSetterName() ?? name ?? 'setState', payload } : undefined
-		)
-	}
+	return setters as SetRecord<S>
 }

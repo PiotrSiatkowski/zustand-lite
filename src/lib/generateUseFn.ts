@@ -1,22 +1,18 @@
-import { shallow } from 'zustand/shallow'
-import { useStoreWithEqualityFn } from 'zustand/traditional'
-
 import { StoreApi as StoreLib } from 'zustand'
 
 import { State } from '../types'
-import { identity, pick } from '../utils/utils'
+import { pick } from '../utils/utils'
+import { generateUseFnStep } from './generateUseFnStep'
+import { generateUseFnBase } from './generateUseFnBase'
 
 /**
- * Generates automatic getters like store.use.foo()
+ * Generates automatic store hook subscribe function store.use()
  *
  * @param lib Zustand api interface
+ * @param key State keys to use
  */
-export function generateUseFn<S extends State, U>(lib: StoreLib<S>) {
-	return (selector = identity, equality = shallow) => {
-		return useStoreWithEqualityFn(
-			lib,
-			Array.isArray(selector) ? (s) => pick(s, selector) : (selector ?? identity),
-			equality
-		)
-	}
+export function generateUseFn<S extends State>(lib: StoreLib<S>, key: string[]) {
+	const getters = generateUseFnBase(lib)
+	generateUseFnStep(pick(lib.getState(), key), getters, [], lib)
+	return getters
 }

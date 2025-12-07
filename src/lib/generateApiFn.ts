@@ -9,7 +9,7 @@ import { State } from '../types'
  * @param lib Zustand api interface
  * @param key Zustand persist local storage key
  */
-export function generateApi<S extends State>(lib: StoreLib<S>, key: string) {
+export function generateApiFn<S extends State>(lib: StoreLib<S>, key: string) {
 	return {
 		getInitialState: lib.getInitialState,
 		getState: lib.getState,

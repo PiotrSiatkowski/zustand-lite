@@ -30,10 +30,10 @@ import {
 import { extendByState } from './extendByState'
 import { extendGetters } from './extendGetters'
 import { extendSetters } from './extendSetters'
-import { generateApi } from './generateApi'
-import { generateGet } from './generateGet'
-import { generateSet } from './generateSet'
-import { generateUse } from './generateUse'
+import { generateApiFn } from './generateApiFn'
+import { generateGetFn } from './generateGetFn'
+import { generateSetFn } from './generateSetFn'
+import { generateUseFn } from './generateUseFn'
 import { restrictState } from './restrictState'
 
 let config: GlobalConfig = { appName: 'zustand-lite', logging: false }
@@ -79,10 +79,10 @@ export function createStore<S extends State, ExtraMW extends MWConfiguration = {
 
 	// Create zustand-lite wrapper.
 	return {
-		api: generateApi(storeLib, persistId),
-		get: generateGet(storeLib),
-		use: generateUse(storeLib, Object.keys(initialState)),
-		set: generateSet(storeLib, Object.keys(initialState), shouldLog),
+		api: generateApiFn(storeLib, persistId),
+		get: generateGetFn(storeLib),
+		use: generateUseFn(storeLib, Object.keys(initialState)),
+		set: generateSetFn(storeLib, Object.keys(initialState), shouldLog),
 		composePlugin(plugin) {
 			return plugin(this)
 		},
