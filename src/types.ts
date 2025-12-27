@@ -21,7 +21,7 @@ export type OverrideUse<T, U, S extends State> = Augments<T, U, UseBase<S>>
 
 export type GetRecord<S extends Record<string, unknown>> = GetBase<S>
 export type SetRecord<S extends Record<string, unknown>> = SetBase<S> & {
-	[K in keyof S]-?: (value: S[K]) => void
+	[K in keyof S]-?: (value: S[K]) => any
 }
 
 export type StoreApiEncapsulated<S extends State = {}, Getters = {}, Setters = {}, ExtraMW = {}> = {
@@ -78,13 +78,13 @@ export type StoreApi<S extends State = {}, Getters = {}, Setters = {}, ExtraMW =
 
 export type GettersBuilder<S extends State, Getters> = (args: {
 	get: OverrideGet<GetRecord<S>, Getters, S>
-}) => Record<string, (...args: any[]) => any>
+}) => Record<string, AnyFn>
 
 export type SettersBuilder<S extends State, Getters = {}, Setters = {}> = (args: {
 	api: StoreLib<S>
 	get: OverrideGet<GetRecord<S>, Getters, S>
 	set: OverrideSet<SetRecord<S>, Setters, S>
-}) => Record<string, (...args: any[]) => void>
+}) => Record<string, AnyFn>
 
 export type ByStateBuilder<NS extends State, S extends State, Getters = {}> = (args: {
 	get: OverrideGet<GetRecord<S>, Getters, S>
@@ -104,6 +104,8 @@ export type UseRecordBase<S> = {
 	(selector?: undefined, equality?: EqualityChecker<Readonly<S>>): Readonly<S>
 }
 export type UseRecord<S> = UseRecordDeep<S> & UseRecordBase<S>
+
+type AnyFn = (...args: any[]) => any
 
 type UseRecordDeep<S> = {
 	[K in keyof S]-?: S[K] extends Record<string, any>
