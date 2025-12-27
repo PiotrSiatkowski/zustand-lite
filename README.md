@@ -88,7 +88,7 @@ const store = createStore({ count: 0 })
 
 function Counter() {
     const count = store.use.count()
-     return (
+    return (
         <button onClick={store.set.increment}>
             Count: {count}
         </button>
@@ -278,16 +278,16 @@ const initialState: { rectangle: { a: number; b: number } } = {
 }
 
 export const store = createStore(initialState)
-	.extendByState({ h: 30 })
-	.extendGetters(({ get }) => ({ 
-		volume() {
-			return get().rectangle.a * get().rectange.b * get().h
-		}
-	}))
+    .extendByState({ h: 30 })
+    .extendGetters(({ get }) => ({ 
+        volume() {
+            return get().rectangle.a * get().rectange.b * get().h
+        }
+    }))
 
 // By default shallow equality is being used.
 function Component() {
-	store.set.h(50)
+    store.set.h(50)
     const rectangle = store.use.volume()
 }
 ```
@@ -360,22 +360,22 @@ You can define plugins that inject additional state or behavior:
 import { definePlugin } from 'zustand-lite'
 
 export const withMyPlugin = definePlugin((store) =>
-	// If plugin defines data, that and only that data is available inside
-	// setters and getters.
-	store
-		.extendByState({ side: 1 })
-		.extendGetters(({ get }) => ({
-			// Every piece od data, getter or setter will be available in the custom
-			// extendGetter and extendSetter, allowing for even more interactions.
-			area() {
-				return get().side * get().side
-			},
-		}))
-		.extendSetters(({ set }) => ({
-			area(area: number) {
-				return set.side(Math.sqrt(area))
-			},
-		}))
+    // If plugin defines data, that and only that data is available inside
+    // setters and getters.
+    store
+        .extendByState({ side: 1 })
+        .extendGetters(({ get }) => ({
+            // Every piece od data, getter or setter will be available in the custom
+            // extendGetter and extendSetter, allowing for even more interactions.
+            area() {
+                return get().side * get().side
+            },
+        }))
+        .extendSetters(({ set }) => ({
+            area(area: number) {
+                return set.side(Math.sqrt(area))
+            },
+        }))
 )
 ```
 
