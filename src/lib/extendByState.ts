@@ -30,8 +30,8 @@ export function extendByState<
 	// Calculate new state to be added to the store.
 	const newState: NewData = typeof builder === 'function' ? builder(api) : builder
 
-	// Merge the new keys into the zustand state.
-	lib.setState(newState as unknown as OldData)
+	// Merge the new keys into the zustand state in such a way that the old keys are preserved.
+	lib.setState({ ...newState, ...lib.getState() })
 
 	// Generate basic getters and setters from the newly added record.
 	api.use = { ...api.use, ...generateUseFn(lib, Object.keys(newState)) }
