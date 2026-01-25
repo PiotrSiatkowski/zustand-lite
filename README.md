@@ -1,6 +1,6 @@
 ![Zustand Lite Image](./image.png)
 
-# 🧠 Zustand Lite
+# Zustand Lite
 
 [![npm version](https://img.shields.io/npm/v/zustand-lite?color=blue)](https://www.npmjs.com/package/zustand-lite)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/zustand-lite)](https://bundlephobia.com/package/zustand-lite)
@@ -8,9 +8,7 @@
 [![Types](https://img.shields.io/badge/TypeScript-ready-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![GitHub stars](https://img.shields.io/github/stars/PiotrSiatkowski/zustand-lite?style=social)](https://github.com/PiotrSiatkowski/zustand-lite)
 
-> **State management that gets out of your way.**
->
-> Zero boilerplate. Full TypeScript. Chainable API. Just works.
+A thin wrapper around [Zustand](https://github.com/pmndrs/zustand) that generates getters, setters, and hooks for you.
 
 ```ts
 import { createStore } from 'zustand-lite'
@@ -20,13 +18,16 @@ const store = createStore({ count: 0 })
         increment: () => set.count(get().count + 1),
     }))
 
-// That's it! Use it anywhere:
-store.use.count()        // React hook - subscribes to changes
-store.get().count        // Direct access - no re-renders
-store.set.increment()    // Call action
+store.use.count()        // React hook
+store.get().count        // Direct access
+store.set.increment()    // Action
 ```
 
+That's it. No providers, no boilerplate, full TypeScript support.
+
 ---
+
+## Why?
 
 Zustand Lite is a **zero-boilerplate** state management built specifically for frontend
 developers who want **powerful and scalable** global state **without the usual complexity**.
@@ -34,427 +35,343 @@ Designed for simplicity, it gives you everything you need out-of-the-box — fro
 setters to middleware — while remaining lightweight and extensible. With seamless support for
 plugins, devtools, and state encapsulation, managing state becomes a breeze, not a chore.
 
-_A zero-boilerplate wrapper around [Zustand](https://github.com/pmndrs/zustand), focused on
-ergonomics, plugins, and dynamic extension — inspired by [zustand-x](https://github.com/udecode/zustand-x) and getters/setters auto-generation patterns._
+Zustand is great, but you still end up writing repetitive code: selectors for each field, actions that follow the same patterns, hooks that look almost identical.
 
-## 🛠️ Why **zustand‑lite**?
+Zustand Lite fixes that. You define your state once, and it generates:
+- `store.use.fieldName()` - React hooks with proper subscriptions
+- `store.set.fieldName(value)` - Type-safe setters
+- `store.get()` - Synchronous access to current state
 
-### ✅ In short
+Plus a chainable API for computed values, custom actions, and plugins.
 
-_**Zustand Lite** delivers a **simple**, **performant**, and **predictable** way to manage UI
-state, letting your code stay focused on business logic, not infrastructure. Try it today and
-see how effortless frontend state can be!_
+## Install
 
-_While tools like React‑Query handle server state, UI state often gets bogged down by excessive
-boilerplate, tangled data flows, and hard‑to‑control side effects. **Zustand Lite** cuts through
-the noise._
-
-### ✨ Why it matters
-
-Boilerplate is the killer of productivity and obscures your real goal: **business logic**, which is usually far simpler than it appears.  
-Thanks to **zustand‑lite**, you can move faster without sacrificing clarity or flexibility.
-
-1. **No context providers** or React-specific setup.
-2. **No mocking** during tests
-3. **No bloated dependency arrays**
-4. **Type-safe, simple API** - simple usage with IDE support
-
-### 🚀 Features
-
-- ⚛️ **Minimal & Typed**: Built on top of lightweight Zustand core, fully typed with TypeScript.
-- 🔄 **Clean Separation**: State and operations are well separated to minimize confusion.
-- 🚀 **Blazing Performance**: Selective updates and lean subscriptions keep things snappy.
-- 🪄 **Zero Boilerplate**: Does not require writing any idle code.
-- 🧪 **Test Friendly**: Easy to test, no additional hacks or mocks required.
-- 🔌 **Shareable plugins**: Plug custom logic directly into your store for extended capabilities.
-- 🧩 **Optional middlewares**: Seamlessly add devtools and persist middleware layers.
-- 🌱 **Chainable API**: create the store in a few simple composable steps.
-- 👁 **Redux devtools labeling**: Built-in clear, traceable action labeling useful for debugging.
+```bash
+npm install zustand-lite zustand
+```
 
 ---
 
-## 🛠 Common Recipes
+## Examples
 
-### Simple store
+### Basic usage
 
 ```ts
 import { createStore } from 'zustand-lite'
 
-export const store = createStore({ foo: '' })
+export const store = createStore({ name: '', email: '' })
 
-// Subscribe for your data changes.
-function Component() {
-	const foo = store.use.foo()
+// In your component
+function Profile() {
+    const name = store.use.name()
+    const email = store.use.email()
+    
+    return <div>{name} ({email})</div>
 }
 
-// Synchronous state accessor.
-function onClick() {
-	console.log(store.get().foo)
-}
-
-// Setting value with auto-generated setter.
-function onClick() {
-	store.set.foo('new-value')
-}
+// Update from anywhere
+store.set.name('John')
+store.set.email('john@example.com')
 ```
 
-### Custom Setters
+### Custom setters
 
 ```ts
 const store = createStore({ count: 0 })
     .extendSetters(({ get, set }) => ({
-           increment: () => set.count(get().count + 1)
-      }))
-
-function Counter() {
-    const count = store.use.count()
-    return (
-        <button onClick={store.set.increment}>
-            Count: {count}
-        </button>
-    )
-}
-```
-
-### Advanced store
-
-```ts
-const initialState: { point: { x: number; y: number }; rectangle: { a: number; b: number } } = {
-	point: { x: 0, y: 0 },
-	rectangle: { a: 20, b: 10 },
-}
-
-export const store = createStore(initialState)
-	.extendGetters(({ get }) => ({ area: () => get().rectangle.a * get().rectangle.b }))
-	.extendSetters(({ get, set }) => ({
-		translateX: (dx: number) => set.bar({ x: get().point.x + dx, y: get().point.y }),
-	}))
-	.restrictState(['rectangle'])
-// ^ Seal the store, so that certain fields are unavailable for
-// the outside context, while still being available for getters and setters.
-
-// Subscribe for computed data changes. This new selector is auto-generated.
-function Component() {
-	const area = store.use.area()
-}
-
-// Make private value inaccessible.
-function onClick() {
-	console.log(store.get().rectangle)
-	// ^ TS error, no value. It is not accessible
-	// anymore from outside the store.
-}
-
-// Call custom action.
-function onClick() {
-	store.set.translateX(7)
-}
-
-// Access native Zustand api (expect getState, setState,
-// which are available thrugh store.get() and store.set()
-// for simplicity and additional expresivness).
-function Component() {
-	const state = store.api.getInitialState()
-}
-```
-
-### Deep value getters
-
-```ts
-const initialState: { my: { foo: { bar: string } } } = {
-    my: { foo: { bar: 'value' } },
-}
-
-export const store = createStore(initialState)
-    .extendGetters(({ get }) => ({
-        // Entire state is accessible with store.get()
-        myFooBar: () => get().my.foo.bar,
+        increment: () => set.count(get().count + 1),
+        decrement: () => set.count(get().count - 1),
+        reset: () => set.count(0),
     }))
-    .restrictState()
 
-// Component will update only if deeply nested value will update.
+// Use them directly
+store.set.increment()
+store.set.reset()
+
+// Or in components
+<button onClick={store.set.increment}>+</button>
+```
+
+### Computed values (getters)
+
+```ts
+const store = createStore({ 
+    items: [] as { price: number; qty: number }[] 
+})
+    .extendGetters(({ get }) => ({
+        total: () => get().items.reduce((sum, item) => sum + item.price * item.qty, 0),
+        itemCount: () => get().items.length,
+    }))
+
+// Computed values work as hooks too
+function CartSummary() {
+    const total = store.use.total()
+    const count = store.use.itemCount()
+    
+    return <div>{count} items, ${total}</div>
+}
+```
+
+### Deep selectors
+
+Nested state? No problem. Zustand Lite auto-generates deep selectors:
+
+```ts
+const store = createStore({ 
+    user: { 
+        profile: { 
+            name: 'John' 
+        } 
+    } 
+})
+
+// These are all valid and properly subscribed
+store.use.user()
+store.use.user.profile()
+store.use.user.profile.name()
+```
+
+### Select multiple fields
+
+```ts
+const store = createStore({ a: 1, b: 2, c: 3, d: 4 })
+
 function Component() {
-    const myFooBar = store.use.myFooBar()
+    // Only re-renders when a or c change
+    const { a, c } = store.use(['a', 'c'])
 }
-```
-
-### Automatic deep selectors
-
-```ts
-const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
-
-export const store = createStore(initialState)
-
-// Component will update only if deeply nested value will update.
-// Those selectors will be generated only for required attributes.
-function Component() {
-	const myFooBar = store.use.my.foo.bar()
-}
-```
-
-### Ad-hoc selectors
-
-```ts
-const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
-
-export const store = createStore(initialState)
-
-// If no auto-generated selector is available,
-// custom one may still be used.
-function Component() {
-	const myFooBar = store.use((state) => state.my.foo, customEquality)
-}
-```
-
-### Multi selectors
-
-```ts
-const initialState = { a: 'a', b: 'b', c: 'c', d: 'd' }
-
-export const store = createStore(initialState)
-
-// Listen to multiple properties of the store at the same time
-// for maximal brevity.
-function Component() {
-	const { a, c } = store.use(['a', 'c'])
-}
-```
-
-### Setting whole state
-
-```ts
-const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
-
-export const store = createStore(initialState)
-
-// State can be set with first level auto-generated
-// setters or with store.set
-store.set((state) => ({ ...state, newField: 'newField' }))
-// By default state is shallowly merged.
-store.set({ newField: 'newField' })
-// Emptying the state with replace: true flag.
-store.set({}, true)
-```
-
-### Overriding getters and setters
-
-```ts
-const initialState: { point: { x: number; y: number }; rectangle: { a: number; b: number } } = {
-	point: { x: 0, y: 0 },
-	rectangle: { a: 20, b: 10 },
-}
-
-export const store = createStore(initialState)
-	.extendGetters(({ get }) => ({
-		// get().point refers to the store value
-		myPoint: () => transformToDifferentCoordinates(get().point),
-	}))
-	.extendGetters(({ get }) => ({
-		// get.myPoint() will refer to the already transformed point
-		// from the previous getter. It will override the previous
-		// one, but can still accesess anything defined before.
-		myPoint: () => soSomethingWithTransformedPoint(get.myPoint()),
-	}))
-	.restrictState()
 ```
 
 ### Custom equality
 
 ```ts
-const initialState: { rectangle: { a: number; b: number } } = { rectangle: { a: 20, b: 10 } }
+const store = createStore({ data: { id: 1, name: 'test', updatedAt: Date.now() } })
 
-export const store = createStore(initialState)
+// Default uses shallow equality
+const data = store.use.data()
 
-// By default shallow equality is being used.
-// You can pass a custom equality function.
-function Component() {
-	const rectangle = store.use.rectangle(customEqualityFn)
-}
+// Custom equality for auto-generated selectors
+const data = store.use.data((a, b) => a.id === b.id)
+
+// Custom equality for ad-hoc selectors
+const data = store.use(
+    (state) => state.data,
+    (a, b) => a.id === b.id
+)
 ```
 
-### Custom equality for parameterized getters
+For getters with parameters, pass `{ eq }` as the last argument:
 
 ```ts
-const store = createStore({
-	items: [
-		{ id: 1, name: 'Item 1', metadata: { updatedAt: Date.now() } },
-		{ id: 2, name: 'Item 2', metadata: { updatedAt: Date.now() } },
-	],
-})
-	.extendGetters(({ get }) => ({
-		getItemById: (id: number) => get().items.find((item) => item.id === id),
-	}))
+const store = createStore({ items: [{ id: 1, name: 'Item', meta: {} }] })
+    .extendGetters(({ get }) => ({
+        getById: (id: number) => get().items.find(i => i.id === id),
+    }))
 
-// Custom getters with any number of parameters can use custom equality
-// by passing { eq: ... } as the last argument.
-function Component({ id }: { id: number }) {
-	// Only re-render when id or name changes, ignore metadata updates
-	const item = store.use.getItemById(id, {
-		eq: (a, b) => a?.id === b?.id && a?.name === b?.name,
-	})
-	return <div>{item?.name}</div>
+function Item({ id }: { id: number }) {
+    // Only re-render when id or name changes, ignore meta
+    const item = store.use.getById(id, {
+        eq: (a, b) => a?.id === b?.id && a?.name === b?.name
+    })
 }
 ```
 
 ### Extending state
 
+Add more state fields after creation:
+
 ```ts
-const initialState: { rectangle: { a: number; b: number } } = { rectangle: { a: 20, b: 10 } }
-
-export const store = createStore(initialState)
-	.extendByState({ h: 30 })
-	.extendGetters(({ get }) => ({
-		volume() {
-			return get().rectangle.a * get().rectangle.b * get().h
-		},
-	}))
-
-// By default shallow equality is being used.
-function Component() {
-	store.set.h(50)
-	const rectangle = store.use.volume()
-}
+const store = createStore({ a: 'a' })
+    .extendByState({ b: 'b' })  // Plain object
+    .extendByState(({ get }) => ({ c: get().a + get().b }))  // Derived from existing state
 ```
 
-### Testing features
+### Overriding getters and setters
+
+Chain multiple `extendGetters` or `extendSetters` to override previous definitions. The new definition can access the previous one via `get.previousGetter()`:
 
 ```ts
-function Component() {
-    const dependencyA = store.use.dependencyA()
-}
+const store = createStore({ price: 100 })
+    .extendGetters(({ get }) => ({
+        displayPrice: () => get().price,
+    }))
+    .extendGetters(({ get }) => ({
+        // Override: add currency formatting, but use previous getter
+        displayPrice: () => `$${get.displayPrice().toFixed(2)}`,
+    }))
 
-// No need to mock the store or add additional providers, just
-// interact with it in the usual way. Wrapping setter with act
-// might be needed to sync react updates.
-test('Testing Component', () => ({
-    render(<Component />)
-    act(() => store.set.dependencyA(someValue))
-    expect(storeDependantText).toBe(someValue)
+store.get.displayPrice() // "$100.00"
+```
+
+### Setting state
+
+Multiple ways to update state:
+
+```ts
+const store = createStore({ a: 1, b: 2 })
+
+// Auto-generated setters
+store.set.a(10)
+
+// Partial update (shallow merge)
+store.set({ a: 10 })
+
+// Function update
+store.set((state) => ({ a: state.a + 1 }))
+
+// Replace entire state (second arg = true)
+store.set({ a: 100, b: 200 }, true)
+```
+
+### Private state
+
+Sometimes you want internal state that components can't access directly:
+
+```ts
+const store = createStore({ 
+    publicValue: 'visible',
+    _internalCache: new Map(),
+})
+    .extendGetters(({ get }) => ({
+        getCached: (key: string) => get()._internalCache.get(key),
+    }))
+    .restrictState(['_internalCache'])
+
+// Works
+store.get().publicValue
+store.get.getCached('key')
+
+// TypeScript error - _internalCache is hidden
+store.get()._internalCache
+```
+
+### Plugins
+
+Extract reusable patterns into plugins:
+
+```ts
+import { definePlugin } from 'zustand-lite'
+
+// A loading state plugin
+const withLoading = definePlugin((store) =>
+    store
+        .extendByState({ isLoading: false, error: null as string | null })
+        .extendSetters(({ set }) => ({
+            startLoading: () => { set.isLoading(true); set.error(null) },
+            stopLoading: () => set.isLoading(false),
+            setError: (error: string) => { set.error(error); set.isLoading(false) },
+        }))
+)
+
+// Use it
+const store = createStore({ data: null })
+    .composePlugin(withLoading)
+    .extendSetters(({ set }) => ({
+        async fetchData() {
+            set.startLoading()
+            try {
+                const data = await api.getData()
+                set.data(data)
+            } catch (e) {
+                set.setError(e.message)
+            } finally {
+                set.stopLoading()
+            }
+        },
+    }))
+```
+
+### Middleware (devtools & persist)
+
+```ts
+const store = createStore(
+    { count: 0 },
+    {
+        name: 'CounterStore',
+        middlewares: {
+            devtools: true,  // Redux DevTools integration
+            persist: true,   // localStorage persistence
+        },
+    }
+)
+```
+
+Actions show up in DevTools with clear labels like `CounterStore/count` or `CounterStore/myOwnAction`.
+
+---
+
+## API Reference
+
+### `createStore(initialState, options?)`
+
+Creates a store with auto-generated hooks and setters.
+
+**Options:**
+| Key | Type | Description |
+|-----|------|-------------|
+| `name` | `string` | Name for DevTools |
+| `middlewares` | `{ devtools?, persist? }` | Enable middleware |
+
+### Chainable methods
+
+| Method | Description |
+|--------|-------------|
+| `.extendByState(obj \| fn)` | Add more state fields |
+| `.extendGetters(fn)` | Add computed values |
+| `.extendSetters(fn)` | Add custom actions |
+| `.composePlugin(plugin)` | Apply a plugin |
+| `.restrictState(keys?)` | Hide fields from public API |
+
+### Store interface
+
+| Property | Description |
+|----------|-------------|
+| `store.use.field()` | React hook for `field` |
+| `store.use(selector, eq?)` | Hook with custom selector |
+| `store.use(['a', 'b'])` | Hook for multiple fields |
+| `store.get()` | Current state (no subscription) |
+| `store.get.getter()` | Call a computed getter |
+| `store.set.field(value)` | Update a field |
+| `store.set(partial)` | Merge partial state |
+| `store.set(fn)` | Update with function |
+| `store.api` | Raw Zustand API |
+
+---
+
+## Testing
+
+No mocks needed. Just use the store directly:
+
+```ts
+import { store } from './store'
+
+test('increment works', () => {
+    store.set.count(0)
+    store.set.increment()
+    expect(store.get().count).toBe(1)
+})
+
+test('component updates', () => {
+    render(<Counter />)
+    act(() => store.set.count(5))
+    expect(screen.getByText('5')).toBeInTheDocument()
 })
 ```
 
 ---
 
-## 🧠 API Overview
+## Roadmap
 
-### `createStore(initialState, options)`
-
-Creates a typed store with your state and optional middleware.
-
-**Options:**
-
-| Key           | Type                                                                       | Description                  |
-| ------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| `name`        | `string`                                                                   | Name shown in Redux DevTools |
-| `middlewares` | `{ devtools?: true or DevtoolsOptions, persist?: true or PersistOptions }` | Middleware configuration     |
-
-### Chainable Methods
-
-- **`.extendByState(fn | object)`**  
-  Add additional state that can be reused later.
-- **`.extendGetters(fn)`**  
-  Add additional derived getters based on current state.
-- **`.extendSetters(fn)`**  
-  Add additional typed setters.
-- **`.composePlugin(plugin)`**  
-  Composes functionality of existing plugin ito your own store.
-- **`.restrictState(keys?: string[])`**  
-  Hide selected fields from the public API, returning a minimal store (removes config methods as well).
-
-### Store Interface
-
-After creation, your store includes:
-
-| Property              | Purpose                                                         |
-| --------------------- | --------------------------------------------------------------- |
-| `store.use.foo()`     | React hook for subscribing to `foo`                             |
-| `store.use(selector)` | React hook for subscribing to custom selector result            |
-| `store.get()`         | Direct synchronous access to whole state                        |
-| `store.set.foo(v)`    | Set a new value for `foo`                                       |
-| `store.set(state)`    | Set an entire new state                                         |
-| `store.api`           | The native Zustand store API (getInitialState, subscribe, etc.) |
+- [x] Custom equality for parameterized getters
+- [ ] Auto-generate deep setters (currently only first level)
+- [ ] Subscribe with selector middleware
 
 ---
 
-## 🧩 Plugin System
+## Credits
 
-You can define plugins that inject additional state or behavior:
+Built on [Zustand](https://github.com/pmndrs/zustand). Inspired by [zustand-x](https://github.com/udecode/zustand-x).
 
-```ts
-import { definePlugin } from 'zustand-lite'
+## License
 
-export const withMyPlugin = definePlugin((store) =>
-	// If plugin defines data, that and only that data is available inside
-	// setters and getters.
-	store
-		.extendByState({ side: 1 })
-		.extendGetters(({ get }) => ({
-			// Every piece od data, getter or setter will be available in the custom
-			// extendGetter and extendSetter, allowing for even more interactions.
-			area() {
-				return get().side * get().side
-			},
-		}))
-		.extendSetters(({ set }) => ({
-			area(area: number) {
-				return set.side(Math.sqrt(area))
-			},
-		}))
-)
-```
-
-Apply newly created plugin like this:
-
-```ts
-const store = createStore({}).composePlugin(withMyPlugin)
-```
-
-**Any plugin state, getters and setters will be available for usage inside your own store.**
-
-## 🧪 Middlewares Integration
-
-You can enable the most useful middlewares:
-
-```ts
-{
-    name: 'MyApp/CounterStore',
-    middlewares: {
-        devtools: true,
-        persist: {
-            ...options,
-        },
-    }
-}
-```
-
----
-
-## 🛠 Planned improvements
-
-- Configurable level of auto-generation. While I advise to keep store as flat as possible, good
-  structured data is important. For deeper properties it might be more convenient to auto
-  generate getters and setters for deeply nested properties as well. **(partially done with hooks, entire
-  state is selected for get from version 3.0.0, setters still generated for level one only)**
-- ~~Ability to specify equality function for extended getters.~~ **Done!** Custom getters now support
-  equality functions via `{ eq: ... }` as the last argument, working with any number of parameters.
-- Implement subscribe with selector middleware
-
-## 🧱 Built With
-
-- [Zustand](https://github.com/pmndrs/zustand)
-- Inspired by [zustand-x](https://github.com/udecode/zustand-x)
-
-## 📘 License
-
-MIT — free to use, extend, and improve.
-
-## 🤝 Contributing
-
-Pull requests, feedback, and ideas are welcome!  
-If you'd like to publish your own plugins, we recommend namespacing them under:
-
-```
-zustand-lite/plugin-*
-```
-
-or adding them to the main repository under the plugins directory.
+MIT

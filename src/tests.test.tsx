@@ -451,17 +451,26 @@ describe('Zustand Lite', () => {
 
 		function Component() {
 			renderProbe()
-			return <div>{JSON.stringify(store.use(['a', 'b']))}</div>
+			const { a, b } = store.use(['a', 'b'])
+			return (
+				<div>
+					<span data-testid="a">{a}</span>
+					<span data-testid="b">{b}</span>
+				</div>
+			)
 		}
 
 		render(<Component />)
-		screen.getByText('{"a":"a","b":"b"}')
+		expect(screen.getByTestId('a').textContent).toBe('a')
+		expect(screen.getByTestId('b').textContent).toBe('b')
 		expect(renderProbe).toHaveBeenCalledTimes(1)
 		act(() => store.set.changeA())
-		screen.getByText('{"a":"A","b":"b"}')
+		expect(screen.getByTestId('a').textContent).toBe('A')
+		expect(screen.getByTestId('b').textContent).toBe('b')
 		expect(renderProbe).toHaveBeenCalledTimes(2)
 		act(() => store.set.changeC())
-		screen.getByText('{"a":"A","b":"b"}')
+		expect(screen.getByTestId('a').textContent).toBe('A')
+		expect(screen.getByTestId('b').textContent).toBe('b')
 		expect(renderProbe).toHaveBeenCalledTimes(2)
 	})
 
@@ -534,6 +543,113 @@ describe('Zustand Lite', () => {
 		store.set.multiplyWithSet(4)
 
 		// Cannot spy on functions. Tested with logs.
+	})
+
+	test('Custom equality function for auto-generated selector', () => {
+		const store = createStore({
+			data: { id: 1, name: 'Test', timestamp: 0 },
+		}).extendSetters(({ get, set }) => ({
+			updateTimestamp() {
+				set.data({ ...get().data, timestamp: Date.now() })
+			},
+			updateName(name: string) {
+				set.data({ ...get().data, name })
+			},
+		}))
+
+		function ComponentWithShallow() {
+			renderProbe()
+			const data = store.use.data()
+			return <div>Shallow: {data.name}</div>
+		}
+
+		function ComponentWithCustomEquality() {
+			renderProbe()
+			// Only re-render if id or name changes, ignore timestamp
+			const data = store.use.data((a, b) => a.id === b.id && a.name === b.name)
+			return <div>Custom: {data.name}</div>
+		}
+
+		// Test with shallow equality (default) - will re-render on timestamp change
+		const { unmount } = render(<ComponentWithShallow />)
+		screen.getByText('Shallow: Test')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		act(() => store.set.updateTimestamp())
+		// Should re-render because timestamp changed (shallow sees new object)
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+
+		unmount()
+		renderProbe.mockClear()
+
+		// Test with custom equality - should NOT re-render on timestamp change
+		render(<ComponentWithCustomEquality />)
+		screen.getByText('Custom: Test')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		act(() => store.set.updateTimestamp())
+		// Should NOT re-render because custom equality ignores timestamp
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		// But SHOULD re-render when name changes
+		act(() => store.set.updateName('Updated'))
+		screen.getByText('Custom: Updated')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
+
+	test('Custom equality function for ad-hoc selector', () => {
+		const store = createStore({
+			user: { id: 1, name: 'John', lastSeen: 0 },
+		}).extendSetters(({ get, set }) => ({
+			updateLastSeen() {
+				set.user({ ...get().user, lastSeen: Date.now() })
+			},
+			updateName(name: string) {
+				set.user({ ...get().user, name })
+			},
+		}))
+
+		function ComponentWithShallow() {
+			renderProbe()
+			const user = store.use((state) => state.user)
+			return <div>Shallow: {user.name}</div>
+		}
+
+		function ComponentWithCustomEquality() {
+			renderProbe()
+			// Only re-render if id or name changes, ignore lastSeen
+			const user = store.use(
+				(state) => state.user,
+				(a, b) => a.id === b.id && a.name === b.name
+			)
+			return <div>Custom: {user.name}</div>
+		}
+
+		// Test with shallow equality (default) - will re-render on lastSeen change
+		const { unmount } = render(<ComponentWithShallow />)
+		screen.getByText('Shallow: John')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		act(() => store.set.updateLastSeen())
+		// Should re-render because lastSeen changed (shallow sees new object)
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+
+		unmount()
+		renderProbe.mockClear()
+
+		// Test with custom equality - should NOT re-render on lastSeen change
+		render(<ComponentWithCustomEquality />)
+		screen.getByText('Custom: John')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		act(() => store.set.updateLastSeen())
+		// Should NOT re-render because custom equality ignores lastSeen
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		// But SHOULD re-render when name changes
+		act(() => store.set.updateName('Jane'))
+		screen.getByText('Custom: Jane')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
 	})
 
 	test('Custom equality function for parameterized getter', () => {
