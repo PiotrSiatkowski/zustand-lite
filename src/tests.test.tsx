@@ -536,6 +536,73 @@ describe('Zustand Lite', () => {
 		// Cannot spy on functions. Tested with logs.
 	})
 
+	test('Custom equality function for parameterized getter', () => {
+		const store = createStore({
+			items: [
+				{ id: 1, name: 'Item 1', metadata: { timestamp: 0 } },
+				{ id: 2, name: 'Item 2', metadata: { timestamp: 0 } },
+			],
+		})
+			.extendSetters(({ get, set }) => ({
+				updateItemMetadata(id: number) {
+					set.items(
+						get().items.map((item) =>
+							item.id === id ? { ...item, metadata: { timestamp: Date.now() } } : item
+						)
+					)
+				},
+				updateItemName(id: number, name: string) {
+					set.items(get().items.map((item) => (item.id === id ? { ...item, name } : item)))
+				},
+			}))
+			.extendGetters(({ get }) => ({
+				getItemById(id: number) {
+					return get().items.find((item) => item.id === id)
+				},
+			}))
+
+		function ComponentWithShallow() {
+			renderProbe()
+			const item = store.use.getItemById(1)
+			return <div>Item: {item?.name}</div>
+		}
+
+		function ComponentWithCustomEquality() {
+			renderProbe()
+			// Only re-render if id or name changes, ignore metadata changes
+			const item = store.use.getItemById(1, {
+				eq: (a, b) => a?.id === b?.id && a?.name === b?.name,
+			})
+			return <div>Custom: {item?.name}</div>
+		}
+
+		// Test with shallow equality (default) - will re-render on metadata change
+		const { unmount } = render(<ComponentWithShallow />)
+		screen.getByText('Item: Item 1')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		act(() => store.set.updateItemMetadata(1))
+		// Should re-render because metadata changed (shallow comparison sees new object)
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+
+		unmount()
+		renderProbe.mockClear()
+
+		// Test with custom equality - should NOT re-render on metadata change
+		render(<ComponentWithCustomEquality />)
+		screen.getByText('Custom: Item 1')
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		act(() => store.set.updateItemMetadata(1))
+		// Should NOT re-render because custom equality ignores metadata
+		expect(renderProbe).toHaveBeenCalledTimes(1)
+
+		// But SHOULD re-render when name changes
+		act(() => store.set.updateItemName(1, 'Updated Item 1'))
+		screen.getByText('Custom: Updated Item 1')
+		expect(renderProbe).toHaveBeenCalledTimes(2)
+	})
+
 	test('Types', () => {
 		function Component() {
 			const store0 = createStore({ value: 2 })

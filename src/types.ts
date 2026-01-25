@@ -17,7 +17,7 @@ export type UseBase<S extends State> = UseRecordBase<S>
 
 export type OverrideGet<T, U, S extends State> = Augments<T, U, GetBase<S>>
 export type OverrideSet<T, U, S extends State> = Augments<T, U, SetBase<S>>
-export type OverrideUse<T, U, S extends State> = Augments<T, U, UseBase<S>>
+export type OverrideUse<T, U, S extends State> = Augments<T, GettersWithEquality<U>, UseBase<S>>
 
 export type GetRecord<S extends Record<string, unknown>> = GetBase<S>
 export type SetRecord<S extends Record<string, unknown>> = SetBase<S> & {
@@ -106,6 +106,34 @@ export type UseRecordBase<S> = {
 export type UseRecord<S> = UseRecordDeep<S> & UseRecordBase<S>
 
 type AnyFn = (...args: any[]) => any
+
+/**
+ * Options object for customizing getter hook behavior.
+ * Pass this as the last argument to a custom getter hook.
+ *
+ * @example
+ * ```ts
+ * store.use.getItemById(id, { eq: (a, b) => a?.id === b?.id })
+ * ```
+ */
+export type UseGetterOptions<R> = {
+	eq: EqualityChecker<R>
+}
+
+/**
+ * Transforms a getter function type to accept an optional equality options argument.
+ * This allows passing `withEq(equalityFn)` as the last argument to custom getters.
+ */
+export type WithEqualityOption<F> = F extends (...args: infer A) => infer R
+	? (...args: [...A, options?: UseGetterOptions<R>]) => R
+	: F
+
+/**
+ * Transforms all getters in a record to accept optional equality options.
+ */
+export type GettersWithEquality<G> = {
+	[K in keyof G]: WithEqualityOption<G[K]>
+}
 
 type UseRecordDeep<S> = {
 	[K in keyof S]-?: S[K] extends Record<string, any>
