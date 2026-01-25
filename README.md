@@ -1,4 +1,4 @@
-![Zustand Lite Image](./image-small.png)
+![Zustand Lite Image](./image.png)
 
 # 🧠 Zustand Lite
 
@@ -7,6 +7,26 @@
 [![license](https://img.shields.io/npm/l/zustand-lite)](./LICENSE)
 [![Types](https://img.shields.io/badge/TypeScript-ready-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![GitHub stars](https://img.shields.io/github/stars/PiotrSiatkowski/zustand-lite?style=social)](https://github.com/PiotrSiatkowski/zustand-lite)
+
+> **State management that gets out of your way.**
+>
+> Zero boilerplate. Full TypeScript. Chainable API. Just works.
+
+```ts
+import { createStore } from 'zustand-lite'
+
+const store = createStore({ count: 0 })
+    .extendSetters(({ get, set }) => ({
+        increment: () => set.count(get().count + 1),
+    }))
+
+// That's it! Use it anywhere:
+store.use.count()        // React hook - subscribes to changes
+store.get().count        // Direct access - no re-renders
+store.set.increment()    // Call action
+```
+
+---
 
 Zustand Lite is a **zero-boilerplate** state management built specifically for frontend
 developers who want **powerful and scalable** global state **without the usual complexity**.
@@ -64,17 +84,17 @@ export const store = createStore({ foo: '' })
 
 // Subscribe for your data changes.
 function Component() {
-    const foo = store.use.foo()
+	const foo = store.use.foo()
 }
 
 // Synchronous state accessor.
 function onClick() {
-    console.log(store.get().foo)
+	console.log(store.get().foo)
 }
 
 // Setting value with auto-generated setter.
 function onClick() {
-    store.set.foo('new-value')
+	store.set.foo('new-value')
 }
 ```
 
@@ -99,62 +119,56 @@ function Counter() {
 ### Advanced store
 
 ```ts
-const initialState: {
-    point: { x: number; y: number }
-    rectangle: { a: number; b: number }
-} = { 
-    point: { x: 0, y: 0 }, 
-    rectangle: { a: 20, b: 10 } 
+const initialState: { point: { x: number; y: number }; rectangle: { a: number; b: number } } = {
+	point: { x: 0, y: 0 },
+	rectangle: { a: 20, b: 10 },
 }
 
 export const store = createStore(initialState)
-    .extendGetters(({ get }) => ({
-        area: () => get().rectangle.x * get().rectangle.y,
-    }))
-    .extendSetters(({ get, set }) => ({
-        translateX: (dx: number) =>
-            set.bar({ x: get().point.x + dx, y: get().point.y }),
-    }))
-    .restrictState(['rectangle'])
-// ^ Seal the store, so that certain fields are unavailable for 
+	.extendGetters(({ get }) => ({ area: () => get().rectangle.a * get().rectangle.b }))
+	.extendSetters(({ get, set }) => ({
+		translateX: (dx: number) => set.bar({ x: get().point.x + dx, y: get().point.y }),
+	}))
+	.restrictState(['rectangle'])
+// ^ Seal the store, so that certain fields are unavailable for
 // the outside context, while still being available for getters and setters.
 
 // Subscribe for computed data changes. This new selector is auto-generated.
 function Component() {
-    const area = store.use.area()
+	const area = store.use.area()
 }
 
 // Make private value inaccessible.
 function onClick() {
-    console.log(store.get().rectangle)
-    // ^ TS error, no value. It is not accessible 
-    // anymore from outside the store.
+	console.log(store.get().rectangle)
+	// ^ TS error, no value. It is not accessible
+	// anymore from outside the store.
 }
 
 // Call custom action.
 function onClick() {
-    store.set.translateX(7)
+	store.set.translateX(7)
 }
 
-// Access native Zustand api (expect getState, setState, 
-// which are available thrugh store.get() and store.set() 
+// Access native Zustand api (expect getState, setState,
+// which are available thrugh store.get() and store.set()
 // for simplicity and additional expresivness).
 function Component() {
-    const state = store.api.getInitialState()
+	const state = store.api.getInitialState()
 }
 ```
 
 ### Deep value getters
 
 ```ts
-const initialState: { my: { foo: { bar: string} } } = {
+const initialState: { my: { foo: { bar: string } } } = {
     my: { foo: { bar: 'value' } },
 }
 
 export const store = createStore(initialState)
-    .myFooBar(({ get }) => ({
+    .extendGetters(({ get }) => ({
         // Entire state is accessible with store.get()
-        return get().my.foo.bar;
+        myFooBar: () => get().my.foo.bar,
     }))
     .restrictState()
 
@@ -167,61 +181,53 @@ function Component() {
 ### Automatic deep selectors
 
 ```ts
-const initialState: { my: { foo: { bar: string } } } = {
-    my: { foo: { bar: 'value' } },
-}
+const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
 
 export const store = createStore(initialState)
 
-// Component will update only if deeply nested value will update. 
+// Component will update only if deeply nested value will update.
 // Those selectors will be generated only for required attributes.
 function Component() {
-    const myFooBar = store.use.my.foo.bar()
+	const myFooBar = store.use.my.foo.bar()
 }
 ```
 
 ### Ad-hoc selectors
 
 ```ts
-const initialState: { my: { foo: { bar: string } } } = {
-    my: { foo: { bar: 'value' } },
-}
+const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
 
 export const store = createStore(initialState)
 
-// If no auto-generated selector is available, 
+// If no auto-generated selector is available,
 // custom one may still be used.
 function Component() {
-    const myFooBar = store.use((state) => state.my.foo, customEquality)
+	const myFooBar = store.use((state) => state.my.foo, customEquality)
 }
 ```
 
 ### Multi selectors
 
 ```ts
-const initialState = {
-    a: 'a', b: 'b', c: 'c', d: 'd',
-}
+const initialState = { a: 'a', b: 'b', c: 'c', d: 'd' }
 
 export const store = createStore(initialState)
 
 // Listen to multiple properties of the store at the same time
 // for maximal brevity.
 function Component() {
-    const { a, c } = store.use(['a', 'c'])
+	const { a, c } = store.use(['a', 'c'])
 }
 ```
 
 ### Setting whole state
 
 ```ts
-const initialState: { my: { foo: { bar: string } } } = {
-    my: { foo: { bar: 'value' } },
-}
+const initialState: { my: { foo: { bar: string } } } = { my: { foo: { bar: 'value' } } }
 
 export const store = createStore(initialState)
 
-// State can be set with first level auto-generated 
+// State can be set with first level auto-generated
 // setters or with store.set
 store.set((state) => ({ ...state, newField: 'newField' }))
 // By default state is shallowly merged.
@@ -233,62 +239,80 @@ store.set({}, true)
 ### Overriding getters and setters
 
 ```ts
-const initialState: {
-    point: { x: number; y: number }
-    rectangle: { a: number; b: number }
-} = { 
-    point: { x: 0, y: 0 }, 
-    rectangle: { a: 20, b: 10 } 
+const initialState: { point: { x: number; y: number }; rectangle: { a: number; b: number } } = {
+	point: { x: 0, y: 0 },
+	rectangle: { a: 20, b: 10 },
 }
 
 export const store = createStore(initialState)
-    .extendGetters(({ get }) => ({
-        // get().point refers to the store value
-        myPoint: () => transformToDifferentCoordinates(get().point),
-    }))
-    .extendGetters(({ get }) => ({
-        // get.myPoint() will refer to the already transformed point 
-        // from the previous getter. It will override the previous 
-        // one, but can still accesess anything defined before.
-        myPoint: () => soSomethingWithTransformedPoint(get.myPoint()),
-    }))
-    .restrictState()
+	.extendGetters(({ get }) => ({
+		// get().point refers to the store value
+		myPoint: () => transformToDifferentCoordinates(get().point),
+	}))
+	.extendGetters(({ get }) => ({
+		// get.myPoint() will refer to the already transformed point
+		// from the previous getter. It will override the previous
+		// one, but can still accesess anything defined before.
+		myPoint: () => soSomethingWithTransformedPoint(get.myPoint()),
+	}))
+	.restrictState()
 ```
 
 ### Custom equality
 
 ```ts
-const initialState: { rectangle: { a: number; b: number } } = {
-    rectangle: { a: 20, b: 10 },
-}
+const initialState: { rectangle: { a: number; b: number } } = { rectangle: { a: 20, b: 10 } }
 
 export const store = createStore(initialState)
 
 // By default shallow equality is being used.
+// You can pass a custom equality function.
 function Component() {
-    const rectangle = store.use.rectangle(customEqualityFn)
+	const rectangle = store.use.rectangle(customEqualityFn)
+}
+```
+
+### Custom equality for parameterized getters
+
+```ts
+const store = createStore({
+	items: [
+		{ id: 1, name: 'Item 1', metadata: { updatedAt: Date.now() } },
+		{ id: 2, name: 'Item 2', metadata: { updatedAt: Date.now() } },
+	],
+})
+	.extendGetters(({ get }) => ({
+		getItemById: (id: number) => get().items.find((item) => item.id === id),
+	}))
+
+// Custom getters with any number of parameters can use custom equality
+// by passing { eq: ... } as the last argument.
+function Component({ id }: { id: number }) {
+	// Only re-render when id or name changes, ignore metadata updates
+	const item = store.use.getItemById(id, {
+		eq: (a, b) => a?.id === b?.id && a?.name === b?.name,
+	})
+	return <div>{item?.name}</div>
 }
 ```
 
 ### Extending state
 
 ```ts
-const initialState: { rectangle: { a: number; b: number } } = {
-    rectangle: { a: 20, b: 10 },
-}
+const initialState: { rectangle: { a: number; b: number } } = { rectangle: { a: 20, b: 10 } }
 
 export const store = createStore(initialState)
-    .extendByState({ h: 30 })
-    .extendGetters(({ get }) => ({ 
-        volume() {
-            return get().rectangle.a * get().rectange.b * get().h
-        }
-    }))
+	.extendByState({ h: 30 })
+	.extendGetters(({ get }) => ({
+		volume() {
+			return get().rectangle.a * get().rectangle.b * get().h
+		},
+	}))
 
 // By default shallow equality is being used.
 function Component() {
-    store.set.h(50)
-    const rectangle = store.use.volume()
+	store.set.h(50)
+	const rectangle = store.use.volume()
 }
 ```
 
@@ -299,8 +323,8 @@ function Component() {
     const dependencyA = store.use.dependencyA()
 }
 
-// No need to mock the store or add additional providers, just 
-// interact with it in the usual way. Wrapping setter with act 
+// No need to mock the store or add additional providers, just
+// interact with it in the usual way. Wrapping setter with act
 // might be needed to sync react updates.
 test('Testing Component', () => ({
     render(<Component />)
@@ -319,10 +343,10 @@ Creates a typed store with your state and optional middleware.
 
 **Options:**
 
-| Key           | Type                                                                       | Description                          |
-| ------------- | -------------------------------------------------------------------------- | ------------------------------------ |
-| `name`        | `string`                                                                   | Name shown in Redux DevTools         |
-| `middlewares` | `{ devtools?: true or DevtoolsOptions, persist?: true or PersistOptions }` | Middleware configuration             |
+| Key           | Type                                                                       | Description                  |
+| ------------- | -------------------------------------------------------------------------- | ---------------------------- |
+| `name`        | `string`                                                                   | Name shown in Redux DevTools |
+| `middlewares` | `{ devtools?: true or DevtoolsOptions, persist?: true or PersistOptions }` | Middleware configuration     |
 
 ### Chainable Methods
 
@@ -360,22 +384,22 @@ You can define plugins that inject additional state or behavior:
 import { definePlugin } from 'zustand-lite'
 
 export const withMyPlugin = definePlugin((store) =>
-    // If plugin defines data, that and only that data is available inside
-    // setters and getters.
-    store
-        .extendByState({ side: 1 })
-        .extendGetters(({ get }) => ({
-            // Every piece od data, getter or setter will be available in the custom
-            // extendGetter and extendSetter, allowing for even more interactions.
-            area() {
-                return get().side * get().side
-            },
-        }))
-        .extendSetters(({ set }) => ({
-            area(area: number) {
-                return set.side(Math.sqrt(area))
-            },
-        }))
+	// If plugin defines data, that and only that data is available inside
+	// setters and getters.
+	store
+		.extendByState({ side: 1 })
+		.extendGetters(({ get }) => ({
+			// Every piece od data, getter or setter will be available in the custom
+			// extendGetter and extendSetter, allowing for even more interactions.
+			area() {
+				return get().side * get().side
+			},
+		}))
+		.extendSetters(({ set }) => ({
+			area(area: number) {
+				return set.side(Math.sqrt(area))
+			},
+		}))
 )
 ```
 
@@ -411,9 +435,8 @@ You can enable the most useful middlewares:
   structured data is important. For deeper properties it might be more convenient to auto
   generate getters and setters for deeply nested properties as well. **(partially done with hooks, entire
   state is selected for get from version 3.0.0, setters still generated for level one only)**
-- Ability to specify equality function for extended getters. It's possible now, but requires to
-  import hook from 'zustand' package, which is suboptimal **(available from version 3.0.0 with 
-  use() function or deep auto-generated selectors. Still no possible for custom getters)**.
+- ~~Ability to specify equality function for extended getters.~~ **Done!** Custom getters now support
+  equality functions via `{ eq: ... }` as the last argument, working with any number of parameters.
 - Implement subscribe with selector middleware
 
 ## 🧱 Built With
@@ -424,7 +447,6 @@ You can enable the most useful middlewares:
 ## 📘 License
 
 MIT — free to use, extend, and improve.
-
 
 ## 🤝 Contributing
 
