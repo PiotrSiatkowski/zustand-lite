@@ -30,12 +30,12 @@ export function extendByState<
 	// Calculate new state to be added to the store.
 	const newState: NewData = typeof builder === 'function' ? builder(api) : builder
 
-	// Merge the new keys into the zustand state in such a way that the old keys are preserved.
-	lib.setState({ ...newState, ...lib.getState() })
+	// Merge the new keys into the zustand state, in such way that the old keys are preserved.
+	api.set({ ...newState, ...lib.getState() })
 
-	// Generate basic getters and setters from the newly added record.
-	api.use = { ...api.use, ...generateUseFn(lib, Object.keys(newState)) }
-	api.set = { ...api.set, ...generateSetFn(lib, Object.keys(newState), log) }
+	// @ts-ignore
+	api.use = Object.assign(api.use, generateUseFn(lib, Object.keys(newState)))
+	api.set = Object.assign(api.set, generateSetFn(lib, Object.keys(newState), log))
 
 	// Return the same object, but with widened state type (handled by overloads).
 	return api
