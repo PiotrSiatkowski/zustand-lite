@@ -546,16 +546,16 @@ describe('Zustand Lite', () => {
 	})
 
 	test('Custom equality function for auto-generated selector', () => {
-		const store = createStore({
-			data: { id: 1, name: 'Test', timestamp: 0 },
-		}).extendSetters(({ get, set }) => ({
-			updateTimestamp() {
-				set.data({ ...get().data, timestamp: Date.now() })
-			},
-			updateName(name: string) {
-				set.data({ ...get().data, name })
-			},
-		}))
+		const store = createStore({ data: { id: 1, name: 'Test', timestamp: 0 } }).extendSetters(
+			({ get, set }) => ({
+				updateTimestamp() {
+					set.data({ ...get().data, timestamp: Date.now() })
+				},
+				updateName(name: string) {
+					set.data({ ...get().data, name })
+				},
+			})
+		)
 
 		function ComponentWithShallow() {
 			renderProbe()
@@ -598,16 +598,16 @@ describe('Zustand Lite', () => {
 	})
 
 	test('Custom equality function for ad-hoc selector', () => {
-		const store = createStore({
-			user: { id: 1, name: 'John', lastSeen: 0 },
-		}).extendSetters(({ get, set }) => ({
-			updateLastSeen() {
-				set.user({ ...get().user, lastSeen: Date.now() })
-			},
-			updateName(name: string) {
-				set.user({ ...get().user, name })
-			},
-		}))
+		const store = createStore({ user: { id: 1, name: 'John', lastSeen: 0 } }).extendSetters(
+			({ get, set }) => ({
+				updateLastSeen() {
+					set.user({ ...get().user, lastSeen: Date.now() })
+				},
+				updateName(name: string) {
+					set.user({ ...get().user, name })
+				},
+			})
+		)
 
 		function ComponentWithShallow() {
 			renderProbe()
@@ -668,7 +668,9 @@ describe('Zustand Lite', () => {
 					)
 				},
 				updateItemName(id: number, name: string) {
-					set.items(get().items.map((item) => (item.id === id ? { ...item, name } : item)))
+					set.items(
+						get().items.map((item) => (item.id === id ? { ...item, name } : item))
+					)
 				},
 			}))
 			.extendGetters(({ get }) => ({
