@@ -281,7 +281,7 @@ const store = createStore({ data: null })
     }))
 ```
 
-### Middleware (devtools & persist)
+### Middleware
 
 ```ts
 const store = createStore(
@@ -297,6 +297,24 @@ const store = createStore(
 ```
 
 Actions show up in DevTools with clear labels like `CounterStore/count` or `CounterStore/myOwnAction`.
+
+Selector subscriptions are available by default, without receiving unrelated updates:
+
+```ts
+const unsubscribe = store.api.subscribe(
+    (state) => state.count,
+    (count, previousCount) => {
+        console.log({ count, previousCount })
+    },
+    { fireImmediately: true }
+)
+
+unsubscribe()
+```
+
+Set `fireImmediately` to `true` to call the listener as soon as it subscribes. The
+current selected value is passed as both `count` and `previousCount`; without this
+option, the listener runs only after the selected value changes.
 
 ---
 
@@ -364,7 +382,7 @@ test('component updates', () => {
 
 - [x] Custom equality for parameterized getters
 - [ ] Auto-generate deep setters (currently only first level)
-- [ ] Subscribe with selector middleware
+- [x] Subscribe with selector middleware
 
 ---
 

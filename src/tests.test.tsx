@@ -721,6 +721,27 @@ describe('Zustand Lite', () => {
 		expect(renderProbe).toHaveBeenCalledTimes(2)
 	})
 
+	test('Subscribes to selected state changes', () => {
+		const store = createStore({ count: 0, label: 'initial' })
+		const listener = jest.fn()
+
+		const unsubscribe = store.api.subscribe((state) => state.count, listener, {
+			fireImmediately: true,
+		})
+
+		expect(listener).toHaveBeenLastCalledWith(0, 0)
+
+		store.set.label('updated')
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		store.set.count(1)
+		expect(listener).toHaveBeenLastCalledWith(1, 0)
+
+		unsubscribe()
+		store.set.count(2)
+		expect(listener).toHaveBeenCalledTimes(2)
+	})
+
 	test('Types', () => {
 		function Component() {
 			const store0 = createStore({ value: 2 })

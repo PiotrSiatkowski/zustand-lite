@@ -14,7 +14,7 @@
  * Idea is to support small store without complicated data reducing (it can be done as well,
  * but may indicate something is not right with the use case itself).
  **/
-import { devtools, persist } from 'zustand/middleware'
+import { devtools, persist, subscribeWithSelector } from 'zustand/middleware'
 import { createStore as createVanillaStore } from 'zustand/vanilla'
 
 import {
@@ -25,6 +25,7 @@ import {
 	State,
 	StoreApi,
 	StorePersist,
+	StoreSubscribeWithSelector,
 } from '../types'
 
 import { extendByState } from './extendByState'
@@ -49,7 +50,8 @@ export function createStore<S extends State, ExtraMW extends MWConfiguration = {
 	S,
 	GetRecord<S>,
 	SetRecord<S>,
-	ExtraMW extends { persist: any } ? StorePersist<S> : {}
+	(ExtraMW extends { persist: any } ? StorePersist<S> : {}) &
+		StoreSubscribeWithSelector<S>
 > {
 	const { name = 'zustand-lite', middlewares = {} as ExtraMW } = options ?? {}
 
@@ -73,6 +75,8 @@ export function createStore<S extends State, ExtraMW extends MWConfiguration = {
 			...(typeof middlewares.persist === 'object' ? middlewares.persist : {}),
 		})
 	}
+
+	initializer = subscribeWithSelector(initializer)
 
 	// Create a vanilla zustand store to wrap.
 	const storeLib: any = createVanillaStore(initializer)

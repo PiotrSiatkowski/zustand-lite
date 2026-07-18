@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-explicit-any: 0 */
 /* eslint @typescript-eslint/no-empty-object-type: 0 */
-import { StoreApi as StoreApiLib } from 'zustand'
+import { Mutate, StoreApi as StoreApiLib } from 'zustand'
 import { DevtoolsOptions, PersistOptions } from 'zustand/middleware'
 
 export type State = Record<PropertyKey, unknown>
@@ -172,5 +172,10 @@ export type StorePersist<S> = {
 		setOptions: (options: Partial<PersistOptions<S, S>>) => void
 	}
 }
+
+export type StoreSubscribeWithSelector<S> = Pick<
+	Mutate<StoreApiLib<S>, [['zustand/subscribeWithSelector', never]]>,
+	'subscribe'
+>
 
 export type GlobalConfig = { appName: string; logging: boolean }

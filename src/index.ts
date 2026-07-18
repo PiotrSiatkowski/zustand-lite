@@ -1,4 +1,4 @@
 export { definePlugin } from './lib/definePlugin'
 export { createStore, setGlobalConfig } from './lib/createStore'
 export { withReset } from './plugins/reset'
-export type { UseGetterOptions } from './types'
+export type { StoreApi, StoreApiEncapsulated, UseGetterOptions } from './types'
