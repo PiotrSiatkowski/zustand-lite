@@ -1,35 +1,47 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { State } from '../types'
+import { isPromiseLike } from '../utils/object'
 
 /**
- * Required to wrap original Zustand interface without getState and setState, which are handled
- * by get and set (we should allow only one way of doing certain things).
+ * Exposes the supported vanilla API and augments Zustand persist with a convenient `read`.
  *
- * @param lib Zustand api interface
- * @param key Zustand persist local storage key
+ * @param storeLib Underlying Zustand vanilla store.
  */
-export function generateApiFn<S extends State>(lib: StoreLib<S>, key: string) {
+export function generateApiFn<StoreState extends State>(storeLib: StoreLib<StoreState>) {
+	const persistApi = augmentPersist(storeLib)
+
 	return {
-		getInitialState: lib.getInitialState,
-		getState: lib.getState,
-		persist: augmentPersist(lib, key),
-		setState: lib.setState,
-		subscribe: lib.subscribe,
+		getInitialState: storeLib.getInitialState,
+		getState: storeLib.getState,
+		setState: storeLib.setState,
+		subscribe: storeLib.subscribe,
+		...(persistApi ? { persist: persistApi } : {}),
 	}
 }
 
-function augmentPersist<S extends State>(lib: StoreLib<S>, key: string) {
-	if ('persist' in lib) {
-		const augmented: any = lib.persist
-		augmented.read = () => {
-			try {
-				return JSON.parse(localStorage?.getItem(key) ?? '')?.state
-			} catch {
-				return undefined
-			}
-		}
+function augmentPersist<StoreState extends State>(storeLib: StoreLib<StoreState>) {
+	if ('persist' in storeLib) {
+		const persistApi: any = storeLib.persist
 
-		return augmented
+		// Zustand intentionally exposes storage primitives; `read` unwraps their state envelope.
+		persistApi.read = () => readPersistedState(persistApi.getOptions())
+
+		return persistApi
+	}
+}
+
+function readPersistedState(persistOptions: Record<string, any>) {
+	try {
+		const storedValue = persistOptions.storage?.getItem(persistOptions.name)
+
+		return isPromiseLike(storedValue)
+			? Promise.resolve(storedValue)
+					.then((value: any) => value?.state)
+					.catch(() => undefined)
+			: storedValue?.state
+	} catch {
+		// Reading persistence is observational; unavailable or malformed storage is non-fatal.
+		return undefined
 	}
 }

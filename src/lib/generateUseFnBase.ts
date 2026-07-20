@@ -7,15 +7,17 @@ import { State } from '../types'
 import { identity, pick } from '../utils/utils'
 
 /**
- * Generates automatic getters like store.use.foo()
+ * Creates the root `store.use(...)` hook.
  *
- * @param lib Zustand api interface
+ * @param storeLib Underlying Zustand vanilla store.
  */
-export function generateUseFnBase<S extends State, U>(lib: StoreLib<S>) {
+export function generateUseFnBase<StoreState extends State, HookResult>(
+	storeLib: StoreLib<StoreState>
+) {
 	return (selector = identity, equality = shallow) => {
 		return useStoreWithEqualityFn(
-			lib,
-			Array.isArray(selector) ? (s) => pick(s, selector) : (selector ?? identity),
+			storeLib,
+			Array.isArray(selector) ? (state) => pick(state, selector) : (selector ?? identity),
 			equality
 		)
 	}

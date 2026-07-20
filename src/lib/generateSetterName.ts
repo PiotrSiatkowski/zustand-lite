@@ -1,12 +1,16 @@
 import ErrorStackParser from 'error-stack-parser'
 
 /**
- * Hacky, but working (and possibly only one there is) method of fetching proper caller
- * name of the extended function.
+ * Infers a custom setter's name from the normalized call stack.
+ *
+ * Custom setters use a sentinel function name so the immediately preceding frame can be
+ * reported to devtools without requiring users to repeat an action name manually.
  */
 export function generateSetterName() {
-	// Proper setter name should hide at 2nd position in the normalized stack.
-	const stack = ErrorStackParser.parse(new Error())
-	const index = stack.findIndex((entry) => entry.functionName?.includes('_zustandLiteInferName_'))
-	return index - 1 >= 0 ? stack[index - 1].functionName : null
+	const frames = ErrorStackParser.parse(new Error())
+	const marker = frames.findIndex((entry) =>
+		entry.functionName?.includes('_zustandLiteInferName_')
+	)
+
+	return marker > 0 ? frames[marker - 1].functionName : null
 }

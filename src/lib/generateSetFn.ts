@@ -1,34 +1,49 @@
-import { shallow } from 'zustand/shallow'
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { SetRecord, State } from '../types'
+import { isShallowEqualValue } from '../utils/equality'
+import { defineEnumerableValue } from '../utils/object'
 import { generateSetFnBase } from './generateSetFnBase'
 import { generateSetterName } from './generateSetterName'
 
 /**
- * Generates automatic setters like store.set.foo(value)
+ * Generates field setters such as `store.set.foo(value)`.
  *
- * @param lib Zustand api interface
- * @param key Keys to generate setters for
- * @param log If devtools were activated for this store
+ * @param storeLib Underlying Zustand vanilla store.
+ * @param stateKeys State keys that receive setters.
+ * @param shouldLog Whether setters should include devtools metadata.
  */
-export function generateSetFn<S extends State>(lib: StoreLib<S>, key: string[], log: boolean) {
-	const setters: any = generateSetFnBase(lib, log)
+export function generateSetFn<StoreState extends State>(
+	storeLib: StoreLib<StoreState>,
+	stateKeys: string[],
+	shouldLog: boolean
+) {
+	const setBase: any = generateSetFnBase(storeLib, shouldLog)
 
-	key.forEach((key) => {
-		setters[key] = (value: any) => {
-			if (shallow(lib.getState()[key], value)) {
+	stateKeys.forEach((stateKey) => {
+		defineEnumerableValue(setBase, stateKey, (updatedValue: any) => {
+			const currentState = storeLib.getState()
+
+			if (
+				Object.prototype.hasOwnProperty.call(currentState, stateKey) &&
+				isShallowEqualValue(currentState[stateKey], updatedValue)
+			) {
 				return
 			}
 
-			lib.setState(
-				(state) => ({ ...state, [key]: value }),
+			storeLib.setState(
+				(state) => ({ ...state, [stateKey]: updatedValue }),
 				false,
 				// @ts-ignore Additional parameter will have no effect even if logging is disabled.
-				log ? { type: generateSetterName() ?? key, payload: { [key]: value } } : undefined
+				shouldLog
+					? {
+							type: generateSetterName() ?? stateKey,
+							payload: { [stateKey]: updatedValue },
+						}
+					: undefined
 			)
-		}
+		})
 	})
 
-	return setters as SetRecord<S>
+	return setBase as SetRecord<StoreState>
 }

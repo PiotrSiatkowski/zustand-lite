@@ -1,5 +1,6 @@
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 import { ByStateBuilder, State, StoreApi } from '../types'
+import { assertPlainState, assignEnumerableProperties } from '../utils/object'
 import { generateSetFn } from './generateSetFn'
 import { generateUseFn } from './generateUseFn'
 
@@ -8,35 +9,41 @@ import { generateUseFn } from './generateUseFn'
  *   - passing an object patch:  `{ b: 'x' }`
  *   - or using a builder:       `({ get }) => ({ c: get().b + 'y' })`
  *
- * @param builder  Object patch or function producing new state fields.
- * @param api      The extended store API before widening.
- * @param lib      The underlying Zustand vanilla store.
- * @param log      Enables logging for generated setters.
+ * @param factory Object patch or function producing new state fields.
+ * @param storeApi Zustand Lite API before its state type is widened.
+ * @param storeLib Underlying Zustand vanilla store.
+ * @param shouldLog Whether generated setters should include devtools metadata.
  *
  * @returns The same API instance, but with widened state (via overloads).
  */
 export function extendByState<
-	NewData extends State,
-	OldData extends State,
-	Getters,
-	Setters,
-	Builder extends ByStateBuilder<NewData, OldData, Getters>,
+	AddedState extends State,
+	StoreState extends State,
+	GetMethods,
+	SetMethods,
+	AddBuilder extends ByStateBuilder<AddedState, StoreState, GetMethods>,
 >(
-	builder: Builder | NewData,
-	api: StoreApi<OldData, Getters, Setters>,
-	lib: StoreLib<OldData>,
-	log: boolean
+	factory: AddBuilder | AddedState,
+	storeApi: StoreApi<StoreState, GetMethods, SetMethods>,
+	storeLib: StoreLib<StoreState>,
+	shouldLog: boolean
 ) {
-	// Calculate new state to be added to the store.
-	const newState: NewData = typeof builder === 'function' ? builder(api) : builder
+	const nextState: AddedState = typeof factory === 'function' ? factory(storeApi) : factory
+	assertPlainState(nextState, 'Extended state')
 
-	// Merge the new keys into the zustand state, in such way that the old keys are preserved.
-	api.set({ ...newState, ...lib.getState() })
+	// Existing fields win at runtime, matching the no-overlapping-keys type contract.
+	const baseState = { ...nextState, ...storeApi.api.getInitialState() }
+	storeApi.set({ ...nextState, ...storeLib.getState() })
+	storeApi.api.getInitialState = () => baseState
 
-	// @ts-ignore
-	api.use = Object.assign(api.use, generateUseFn(lib, Object.keys(newState)))
-	api.set = Object.assign(api.set, generateSetFn(lib, Object.keys(newState), log))
+	const stateKeys = Object.keys(nextState)
+	const useFields = generateUseFn(storeLib, stateKeys)
+	const setFields = generateSetFn(storeLib, stateKeys, shouldLog)
 
-	// Return the same object, but with widened state type (handled by overloads).
-	return api
+	// These assignments mutate the existing chainable API while its return type widens.
+	// @ts-ignore The public overloads carry the widened hook shape.
+	storeApi.use = assignEnumerableProperties(storeApi.use, useFields)
+	storeApi.set = assignEnumerableProperties(storeApi.set, setFields)
+
+	return storeApi
 }

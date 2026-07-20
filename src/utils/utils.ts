@@ -1,3 +1,16 @@
-export const identity = (arg: any) => arg
-export const pick = (obj: Record<string, any>, keys: string[]) =>
-	keys.reduce<Record<string, any>>((acc, k) => (k in obj ? ((acc[k] = obj[k]), acc) : acc), {})
+import { defineEnumerableValue } from './object'
+
+export const identity = (value: any) => value
+
+export const pick = (sourceObject: object, selectedKeys: PropertyKey[]) =>
+	selectedKeys.reduce<Record<PropertyKey, any>>((pickedState, selectedKey) => {
+		if (selectedKey in sourceObject) {
+			defineEnumerableValue(
+				pickedState,
+				selectedKey,
+				(sourceObject as Record<PropertyKey, any>)[selectedKey]
+			)
+		}
+
+		return pickedState
+	}, {})

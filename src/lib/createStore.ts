@@ -11,22 +11,22 @@
  * 6) Extending state and restricting state
  * 7) Reuse plugins
  *
- * Idea is to support small store without complicated data reducing (it can be done as well,
- * but may indicate something is not right with the use case itself).
- **/
-import { devtools, persist, subscribeWithSelector } from 'zustand/middleware'
+ * Selector subscriptions are always installed. Persistence and devtools remain opt-in,
+ * except that global logging also enables devtools instrumentation.
+ */
+import { createJSONStorage, devtools, persist, subscribeWithSelector } from 'zustand/middleware'
 import { createStore as createVanillaStore } from 'zustand/vanilla'
 
 import {
-	GetRecord,
 	GlobalConfig,
 	MWConfiguration,
-	SetRecord,
+	PersistedStateFor,
+	PlainState,
 	State,
 	StoreApi,
 	StorePersist,
-	StoreSubscribeWithSelector,
 } from '../types'
+import { assertPlainState } from '../utils/object'
 
 import { extendByState } from './extendByState'
 import { extendGetters } from './extendGetters'
@@ -37,70 +37,79 @@ import { generateSetFn } from './generateSetFn'
 import { generateUseFn } from './generateUseFn'
 import { restrictState } from './restrictState'
 
-let config: GlobalConfig = { appName: 'zustand-lite', logging: false }
+let globalConfig: GlobalConfig = { appName: 'zustand-lite', logging: false }
 
-export function setGlobalConfig(newConfig: Partial<GlobalConfig>) {
-	config = { ...config, ...newConfig }
+export function setGlobalConfig(nextConfig: Partial<GlobalConfig>) {
+	globalConfig = { ...globalConfig, ...nextConfig }
 }
 
-export function createStore<S extends State, ExtraMW extends MWConfiguration = {}>(
-	initialState: S,
-	options?: { name?: string; middlewares?: ExtraMW }
-): StoreApi<
-	S,
-	GetRecord<S>,
-	SetRecord<S>,
-	(ExtraMW extends { persist: any } ? StorePersist<S> : {}) &
-		StoreSubscribeWithSelector<S>
-> {
-	const { name = 'zustand-lite', middlewares = {} as ExtraMW } = options ?? {}
+type MiddlewareApi<StoreState extends State, Middleware> = Middleware extends {
+	persist: infer Persist
+}
+	? Persist extends false | undefined
+		? {}
+		: StorePersist<StoreState, PersistedStateFor<StoreState, Middleware>>
+	: {}
 
-	// Apply supported middlewares.
-	let initializer: any = () => initialState
+export function createStore<
+	StoreState extends State,
+	Middleware extends MWConfiguration<StoreState> = {},
+>(
+	initialState: PlainState<StoreState>,
+	options?: {
+		name?: string
+		middlewares?: Middleware &
+			MWConfiguration<StoreState> &
+			Record<Exclude<keyof Middleware, keyof MWConfiguration<StoreState>>, never>
+	}
+): StoreApi<StoreState, {}, {}, MiddlewareApi<StoreState, Middleware>> {
+	const { name: storeName = 'zustand-lite', middlewares = {} as Middleware } = options ?? {}
 
-	const persistId = `${config.appName.replace(/\s/, '-')}.${name}}`
-	const shouldLog = config.logging || !!middlewares.devtools
+	assertPlainState(initialState, 'Initial state')
+
+	const persistId = `${globalConfig.appName.replace(/\s+/g, '-')}.${storeName}`
+	const shouldLog = globalConfig.logging || !!middlewares.devtools
+	const persistMW = typeof middlewares.persist === 'object' ? middlewares.persist : {}
+	const storageMW = persistMW.storage ?? createJSONStorage(() => localStorage) ?? storageStub
+
+	// Selector subscriptions form the innermost middleware so every outer layer retains them.
+	let stateCreator: any = subscribeWithSelector(() => initialState)
+
+	if (middlewares.persist) {
+		stateCreator = persist(stateCreator, { name: persistId, ...persistMW, storage: storageMW })
+	}
 
 	if (shouldLog) {
-		initializer = devtools(initializer, {
-			name: config.appName,
-			store: name,
+		stateCreator = devtools(stateCreator, {
+			name: globalConfig.appName,
+			store: storeName,
 			...(typeof middlewares.devtools === 'object' ? middlewares.devtools : {}),
 		})
 	}
 
-	if (middlewares.persist) {
-		initializer = persist(initializer, {
-			name: persistId,
-			...(typeof middlewares.persist === 'object' ? middlewares.persist : {}),
-		})
-	}
+	const zustandApi: any = createVanillaStore(stateCreator)
 
-	initializer = subscribeWithSelector(initializer)
-
-	// Create a vanilla zustand store to wrap.
-	const storeLib: any = createVanillaStore(initializer)
-
-	// Create zustand-lite wrapper.
 	return {
-		api: generateApiFn(storeLib, persistId),
-		get: generateGetFn(storeLib),
-		use: generateUseFn(storeLib, Object.keys(initialState)),
-		set: generateSetFn(storeLib, Object.keys(initialState), shouldLog),
+		api: generateApiFn(zustandApi),
+		get: generateGetFn(zustandApi),
+		use: generateUseFn(zustandApi, Object.keys(initialState)),
+		set: generateSetFn(zustandApi, Object.keys(initialState), shouldLog),
 		composePlugin(plugin) {
 			return plugin(this)
 		},
 		extendGetters(builder) {
-			return extendGetters(builder, this, storeLib)
+			return extendGetters(builder, this, zustandApi)
 		},
 		extendSetters(builder) {
-			return extendSetters(builder, this, storeLib, shouldLog)
+			return extendSetters(builder, this, zustandApi, shouldLog)
 		},
 		extendByState(builder) {
-			return extendByState(builder, this, storeLib, shouldLog)
+			return extendByState(builder, this, zustandApi, shouldLog)
 		},
-		restrictState(publicState = []) {
-			return restrictState(publicState, initialState, this, storeLib)
+		restrictState(enclose = []) {
+			return restrictState(enclose, this, zustandApi)
 		},
 	} as any
 }
+
+const storageStub = { getItem: () => null, setItem: () => undefined, removeItem: () => undefined }

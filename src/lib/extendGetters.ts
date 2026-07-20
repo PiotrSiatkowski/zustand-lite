@@ -2,52 +2,68 @@ import { shallow } from 'zustand/shallow'
 import { useStoreWithEqualityFn } from 'zustand/traditional'
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
-import { GettersBuilder, State, StoreApi, UseGetterOptions } from '../types'
+import { BrandedUseGetterOptions, GettersBuilder, State, StoreApi } from '../types'
+import { getterOptionsMarker } from '../utils/optionsMarker'
+import { assignEnumerableProperties } from '../utils/object'
 import { generateGetFnBase } from './generateGetFnBase'
 import { generateUseFnBase } from './generateUseFnBase'
 
 /**
- * Type guard to check if a value is an equality options object.
- * Detects plain objects with an `eq` property that is a function.
- */
-function isEqualityOptions<R>(value: unknown): value is UseGetterOptions<R> {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'eq' in value &&
-		typeof (value as any).eq === 'function'
-	)
-}
-
-/**
  * Adds derived getters to the store.
  *
- * @param builder  Function returning new getter methods.
- * @param api      Current store API to extend.
- * @param lib      Underlying Zustand store.
+ * @param factory Function returning new getter methods.
+ * @param storeApi Current Zustand Lite API.
+ * @param storeLib Underlying Zustand vanilla store.
  */
 export function extendGetters<
-	Builder extends GettersBuilder<S, Getters>,
-	S extends State,
-	Getters,
-	Setters,
->(builder: Builder, api: StoreApi<S, Getters, Setters>, lib: StoreLib<S>) {
-	const methods: any = builder({ get: api.get })
-	const getters: any = {}
+	GetBuilder extends GettersBuilder<StoreState, GetMethods>,
+	StoreState extends State,
+	GetMethods,
+	SetMethods,
+>(
+	factory: GetBuilder,
+	storeApi: StoreApi<StoreState, GetMethods, SetMethods>,
+	storeLib: StoreLib<StoreState>
+) {
+	const getMethods: any = factory({ get: storeApi.get })
+	const useMethods: any = {}
 
-	Object.keys(methods).forEach((key) => {
-		getters[key] = (...args: any[]) => {
-			// Check if the last argument is an equality options object
-			const lastArg = args[args.length - 1]
-			if (isEqualityOptions(lastArg)) {
-				const actualArgs = args.slice(0, -1)
-				return useStoreWithEqualityFn(lib, () => methods[key](...actualArgs), lastArg.eq)
+	Object.keys(getMethods).forEach((methodName) => {
+		useMethods[methodName] = (...callArgs: any[]) => {
+			const finalArg = callArgs[callArgs.length - 1]
+
+			// Branded options are removed before invoking the underlying business getter.
+			if (isEqualityOptions(finalArg)) {
+				return useStoreWithEqualityFn(
+					storeLib,
+					() => getMethods[methodName](...callArgs.slice(0, -1)),
+					finalArg.eq
+				)
 			}
-			return useStoreWithEqualityFn(lib, () => methods[key](...args), shallow)
+
+			return useStoreWithEqualityFn(
+				storeLib,
+				() => getMethods[methodName](...callArgs),
+				shallow
+			)
 		}
 	})
 
-	api.use = Object.assign(generateUseFnBase(lib), api.use, getters)
-	api.get = Object.assign(generateGetFnBase(lib), api.get, methods)
-	return api
+	storeApi.use = assignEnumerableProperties(generateUseFnBase(storeLib), storeApi.use, useMethods)
+	storeApi.get = assignEnumerableProperties(generateGetFnBase(storeLib), storeApi.get, getMethods)
+
+	return storeApi
+}
+
+/**
+ * Type guard to check if a value is an equality options object.
+ * Detects branded objects created by `withOptions`.
+ */
+function isEqualityOptions<R>(value: unknown): value is BrandedUseGetterOptions<R> {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		(value as Record<PropertyKey, unknown>)[getterOptionsMarker] === true &&
+		typeof (value as any).eq === 'function'
+	)
 }

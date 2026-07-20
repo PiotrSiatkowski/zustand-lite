@@ -1,29 +1,56 @@
-import { shallow } from 'zustand/shallow'
 import { StoreApi as StoreLib } from 'zustand/vanilla'
 
 import { State } from '../types'
+import { isShallowEqualValue } from '../utils/equality'
+import { ownEnumerableKeys } from '../utils/object'
 import { generateSetterName } from './generateSetterName'
 
 /**
- * Generates automatic setState function for store like store.set({ value })
+ * Creates the root `store.set(...)` updater with no-op suppression.
  *
- * @param lib Zustand api interface
- * @param log If devtools were activated for this store
+ * @param storeLib Underlying Zustand vanilla store.
+ * @param shouldLog Whether updates should include devtools metadata.
  */
-export function generateSetFnBase<S extends State>(lib: StoreLib<S>, log: boolean) {
-	return (updater: S | ((state: S) => S), replace?: boolean, name?: string) => {
-		const current = lib.getState()
-		const payload = typeof updater === 'function' ? updater(current) : updater
+export function generateSetFnBase<StoreState extends State>(
+	storeLib: StoreLib<StoreState>,
+	shouldLog: boolean
+) {
+	return (
+		updater:
+			| StoreState
+			| Partial<StoreState>
+			| ((state: StoreState) => StoreState | Partial<StoreState>),
+		replace?: boolean,
+		actionName?: string
+	) => {
+		const currentState = storeLib.getState()
+		const updateResult = typeof updater === 'function' ? updater(currentState) : updater
 
-		if (shallow(current, payload)) {
+		const nextState = (
+			replace ? updateResult : { ...currentState, ...updateResult }
+		) as StoreState
+		const unchanged = replace
+			? isShallowEqualValue(currentState, nextState)
+			: ownEnumerableKeys(updateResult).every(
+					(key) =>
+						Object.prototype.hasOwnProperty.call(currentState, key) &&
+						isShallowEqualValue(
+							(currentState as Record<PropertyKey, unknown>)[key],
+							(updateResult as Record<PropertyKey, unknown>)[key]
+						)
+				)
+
+		if (unchanged) {
 			return
 		}
 
-		lib.setState(
-			payload,
+		storeLib.setState(
+			updateResult,
 			replace,
 			// @ts-ignore Additional parameter will have no effect even if logging is disabled.
-			log ? { type: generateSetterName() ?? name ?? 'setState', payload } : undefined
+			shouldLog
+				? { type: generateSetterName() ?? actionName ?? 'setState', payload: updateResult }
+				: undefined
 		)
 	}
 }

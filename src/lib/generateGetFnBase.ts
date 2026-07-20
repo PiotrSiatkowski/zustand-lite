@@ -3,10 +3,10 @@ import { StoreApi as StoreLib } from 'zustand/vanilla'
 import { State } from '../types'
 
 /**
- * Generates getState function for store.get()
+ * Creates the base state accessor shared by generated and extended getters.
  *
- * @param lib Zustand api interface
+ * @param storeLib Underlying Zustand vanilla store.
  */
-export function generateGetFnBase<S extends State>(lib: StoreLib<S>) {
-	return () => lib.getState()
+export function generateGetFnBase<StoreState extends State>(storeLib: StoreLib<StoreState>) {
+	return () => storeLib.getState()
 }

@@ -1,14 +1,16 @@
 import React from 'react'
 import { act, render, screen } from '@testing-library/react'
 
-import { definePlugin } from './lib/definePlugin'
-import { createStore } from './lib/createStore'
+import { createStore, definePlugin, setGlobalConfig, withOptions, withReset } from './index'
 
 const renderProbe = jest.fn()
 
 describe('Zustand Lite', () => {
 	beforeEach(() => {
 		renderProbe.mockClear()
+		localStorage.clear()
+		sessionStorage.clear()
+		setGlobalConfig({ appName: 'zustand-lite', logging: false })
 	})
 
 	test('Getter is not updated', () => {
@@ -688,9 +690,10 @@ describe('Zustand Lite', () => {
 		function ComponentWithCustomEquality() {
 			renderProbe()
 			// Only re-render if id or name changes, ignore metadata changes
-			const item = store.use.getItemById(1, {
-				eq: (a, b) => a?.id === b?.id && a?.name === b?.name,
-			})
+			const item = store.use.getItemById(
+				1,
+				withOptions({ eq: (a, b) => a?.id === b?.id && a?.name === b?.name })
+			)
 			return <div>Custom: {item?.name}</div>
 		}
 
@@ -740,6 +743,125 @@ describe('Zustand Lite', () => {
 		unsubscribe()
 		store.set.count(2)
 		expect(listener).toHaveBeenCalledTimes(2)
+	})
+
+	test('Supports subscription equality and cleanup', () => {
+		const store = createStore({ count: 0 })
+		const listener = jest.fn()
+		const unsubscribe = store.api.subscribe((state) => state.count, listener, {
+			equalityFn: (a, b) => Math.floor(a / 10) === Math.floor(b / 10),
+		})
+
+		store.set.count(5)
+		expect(listener).not.toHaveBeenCalled()
+
+		store.set.count(11)
+		expect(listener).toHaveBeenCalledWith(11, 0)
+
+		unsubscribe()
+		store.set.count(20)
+		expect(listener).toHaveBeenCalledTimes(1)
+	})
+
+	test('Supports whole-state subscriptions', () => {
+		const store = createStore({ count: 0 })
+		const listener = jest.fn()
+		const unsubscribe = store.api.subscribe(listener)
+
+		store.set.count(1)
+
+		expect(listener).toHaveBeenCalledWith({ count: 1 }, { count: 0 })
+		unsubscribe()
+	})
+
+	test('Uses arrays as leaf hooks for dynamic indices', () => {
+		const store = createStore({ items: ['first'] })
+
+		function Component() {
+			return <div>Item: {store.use.items()[1] ?? 'missing'}</div>
+		}
+
+		render(<Component />)
+		screen.getByText('Item: missing')
+
+		act(() => store.set.items(['first', 'second']))
+		screen.getByText('Item: second')
+	})
+
+	test('Preserves custom setter return values', () => {
+		const store = createStore({ count: 2 }).extendSetters(({ get }) => ({
+			double: () => get().count * 2,
+		}))
+
+		expect(store.set.double()).toBe(4)
+	})
+
+	test('Can apply a defined plugin directly', () => {
+		const withStatus = definePlugin((store) =>
+			store
+				.extendByState({ status: 'idle' })
+				.extendSetters(({ set }) => ({ activate: () => set.status('active') }))
+		)
+		const store = withStatus(createStore({ count: 1 }))
+
+		store.set.activate()
+
+		expect(store.get()).toEqual({ count: 1, status: 'active' })
+	})
+
+	test('Built-in reset restores the complete extended initial state', () => {
+		const store = createStore({ count: 1 })
+			.composePlugin(withReset)
+			.extendByState({ status: 'idle' })
+
+		store.set.count(2)
+		store.set.status('active')
+		store.set.reset()
+
+		expect(store.get()).toEqual({ count: 1, status: 'idle' })
+		expect(store.api.getInitialState()).toEqual({ count: 1, status: 'idle' })
+	})
+
+	test('Restricted stores preserve private state for internal actions', () => {
+		const store = createStore({ visible: 1, secret: 2 })
+			.extendGetters(({ get }) => ({ secretValue: () => get().secret }))
+			.extendSetters(({ get, set }) => ({
+				incrementSecret: () => set.secret(get().secret + 1),
+			}))
+			.restrictState(['secret'])
+
+		store.set.incrementSecret()
+
+		expect(store.get()).toEqual({ visible: 1 })
+		expect(store.get.secretValue()).toBe(3)
+	})
+
+	test('Supports complete state replacement', () => {
+		const store = createStore({ count: 1, label: 'before' })
+
+		store.set({ count: 2, label: 'after' }, true)
+
+		expect(store.get()).toEqual({ count: 2, label: 'after' })
+	})
+
+	test('Persists partial state and can clear storage', () => {
+		const store = createStore(
+			{ saved: 1, transient: 'initial' },
+			{
+				name: 'Partial',
+				middlewares: { persist: { partialize: (state) => ({ saved: state.saved }) } },
+			}
+		)
+
+		store.set.saved(2)
+		store.set.transient('changed')
+
+		expect(store.api.persist.read()).toEqual({ saved: 2 })
+		const key = store.api.persist.getOptions().name!
+		expect(localStorage.getItem(key)).not.toBeNull()
+
+		store.api.persist.clearStorage()
+		expect(localStorage.getItem(key)).toBeNull()
 	})
 
 	test('Types', () => {

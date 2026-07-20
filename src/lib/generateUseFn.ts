@@ -6,13 +6,18 @@ import { generateUseFnStep } from './generateUseFnStep'
 import { generateUseFnBase } from './generateUseFnBase'
 
 /**
- * Generates automatic store hook subscribe function store.use()
+ * Generates the root hook and its state-field hook tree.
  *
- * @param lib Zustand api interface
- * @param key State keys to use
+ * @param storeLib Underlying Zustand vanilla store.
+ * @param stateKeys State keys that receive generated hooks.
  */
-export function generateUseFn<S extends State>(lib: StoreLib<S>, key: string[]) {
-	const getters = generateUseFnBase(lib)
-	generateUseFnStep(pick(lib.getState(), key), getters, [], lib)
-	return getters
+export function generateUseFn<StoreState extends State>(
+	storeLib: StoreLib<StoreState>,
+	stateKeys: string[]
+) {
+	const useHooks = generateUseFnBase(storeLib)
+	const rootState = pick(storeLib.getState(), stateKeys)
+
+	generateUseFnStep(rootState, useHooks, [], storeLib)
+	return useHooks
 }

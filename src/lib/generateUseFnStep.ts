@@ -1,46 +1,55 @@
 import { shallow } from 'zustand/shallow'
 import { useStoreWithEqualityFn } from 'zustand/traditional'
+import { defineEnumerableValue, isPlainObject } from '../utils/object'
 
 /**
- * Generates automatic getters like store.use.foo() (recursive steps for each level).
- * Getters are created as side effects.
+ * Recursively attaches field hooks such as `store.use.foo()`.
  *
- * @param state State at nth level
- * @param getters Getters at nth level
- * @param path Property access path at nth level like ['foo', 'bar']
- * @param lib Zustand api interface
+ * @param stateSlice State value at the current depth.
+ * @param hookTarget Hook object at the current depth.
+ * @param statePath Property path at the current depth.
+ * @param storeLib Underlying Zustand vanilla store.
  */
-export function generateUseFnStep(state: any, getters: any, path: string[], lib: any) {
-	if (typeof state === 'object' && state !== null) {
-		Object.keys(state).forEach((key) => {
-			const newPath = [...path, key]
-			Object.defineProperty(getters, key, {
-				value: (equalityFn = shallow) => {
-					return useStoreWithEqualityFn(
-						lib,
-						(state) => getFromPath(state, newPath),
-						equalityFn
-					)
-				},
-				writable: true,
-				configurable: true,
-				enumerable: true,
-			})
-
-			generateUseFnStep(state[key], getters[key], newPath, lib)
-		})
+export function generateUseFnStep(
+	stateSlice: any,
+	hookTarget: any,
+	statePath: string[],
+	storeLib: any
+) {
+	if (!isPlainObject(stateSlice)) {
+		return
 	}
+
+	Object.keys(stateSlice).forEach((stateKey) => {
+		const nextPath = [...statePath, stateKey]
+
+		defineEnumerableValue(hookTarget, stateKey, (equalityFn = shallow) => {
+			return useStoreWithEqualityFn(
+				storeLib,
+				(currentState) => getFromPath(currentState, nextPath),
+				equalityFn
+			)
+		})
+
+		// Recurse only through plain objects; opaque values remain leaf hooks.
+		generateUseFnStep(stateSlice[stateKey], hookTarget[stateKey], nextPath, storeLib)
+	})
 }
 
-function getFromPath(state: any, path: string[]) {
-	let data = state
+function getFromPath(rootState: any, statePath: string[]) {
+	let currentValue = rootState
 
-	for (const key of path) {
-		data = data[key]
-		if (!data) {
-			return data
+	for (const pathKey of statePath) {
+		if (
+			currentValue === null ||
+			currentValue === undefined ||
+			(typeof currentValue !== 'object' && typeof currentValue !== 'function')
+		) {
+			return undefined
 		}
+
+		currentValue = currentValue[pathKey]
 	}
 
-	return data
+	return currentValue
 }

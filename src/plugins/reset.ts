@@ -6,7 +6,7 @@ import { definePlugin } from '../lib/definePlugin'
 export const withReset = definePlugin((store) =>
 	store.extendSetters(({ api, set }) => ({
 		reset: () => {
-			set(api.getInitialState?.() ?? {}, true)
+			set(api.getInitialState(), true)
 		},
 	}))
 )

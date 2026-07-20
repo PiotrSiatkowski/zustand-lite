@@ -1,4 +1,4 @@
-![Zustand Lite Image](./image.png)
+![Zustand Lite Image](https://raw.githubusercontent.com/PiotrSiatkowski/zustand-lite/main/image.png)
 
 # Zustand Lite
 
@@ -47,8 +47,11 @@ Plus a chainable API for computed values, custom actions, and plugins.
 ## Install
 
 ```bash
-npm install zustand-lite zustand
+npm install zustand-lite
 ```
+
+React 18 or newer is required as a peer dependency.
+The package includes ESM, CommonJS, and matching TypeScript declarations.
 
 ---
 
@@ -73,6 +76,10 @@ function Profile() {
 store.set.name('John')
 store.set.email('john@example.com')
 ```
+
+Root state and `.extendByState(...)` patches must be plain objects. Arrays, dates,
+collections, class instances, and other opaque values can be stored as fields, where they
+are treated as leaf values. The prototype-mutating `__proto__` key is rejected.
 
 ### Custom setters
 
@@ -114,7 +121,8 @@ function CartSummary() {
 
 ### Deep selectors
 
-Nested state? No problem. Zustand Lite auto-generates deep selectors:
+Nested state? No problem. Zustand Lite auto-generates deep selectors from the plain-object
+shape present when a state field is added:
 
 ```ts
 const store = createStore({ 
@@ -130,6 +138,12 @@ store.use.user()
 store.use.user.profile()
 store.use.user.profile.name()
 ```
+
+Arrays are treated as leaf values because their indices are dynamic. Read an array with
+`store.use.items()` or subscribe to a specific item with
+`store.use((state) => state.items[index])`. Dates, collections, class instances, boxed
+primitives, and other opaque objects are also treated as leaf values. Deep hooks are not
+created later for object paths that were absent from the initial shape.
 
 ### Select multiple fields
 
@@ -160,9 +174,11 @@ const data = store.use(
 )
 ```
 
-For getters with parameters, pass `{ eq }` as the last argument:
+For getters with parameters, pass `withOptions(...)` as the last argument:
 
 ```ts
+import { withOptions } from 'zustand-lite'
+
 const store = createStore({ items: [{ id: 1, name: 'Item', meta: {} }] })
     .extendGetters(({ get }) => ({
         getById: (id: number) => get().items.find(i => i.id === id),
@@ -170,9 +186,12 @@ const store = createStore({ items: [{ id: 1, name: 'Item', meta: {} }] })
 
 function Item({ id }: { id: number }) {
     // Only re-render when id or name changes, ignore meta
-    const item = store.use.getById(id, {
-        eq: (a, b) => a?.id === b?.id && a?.name === b?.name
-    })
+    const item = store.use.getById(
+        id,
+        withOptions({
+            eq: (a, b) => a?.id === b?.id && a?.name === b?.name
+        })
+    )
 }
 ```
 
@@ -186,9 +205,11 @@ const store = createStore({ a: 'a' })
     .extendByState(({ get }) => ({ c: get().a + get().b }))  // Derived from existing state
 ```
 
+Extensions can only add fields. TypeScript rejects patches that overlap existing state keys.
+
 ### Overriding getters and setters
 
-Chain multiple `extendGetters` or `extendSetters` to override previous definitions. The new definition can access the previous one via `get.previousGetter()`:
+Chain multiple `extendGetters` or `extendSetters` to override previous definitions. The new definition can access the previous getter through `get.<getterName>()`:
 
 ```ts
 const store = createStore({ price: 100 })
@@ -223,6 +244,9 @@ store.set((state) => ({ a: state.a + 1 }))
 store.set({ a: 100, b: 200 }, true)
 ```
 
+Updates that would leave the affected values shallowly equal are ignored. Distinct opaque
+objects, such as two different `Date` instances, are still treated as real updates.
+
 ### Private state
 
 Sometimes you want internal state that components can't access directly:
@@ -244,6 +268,10 @@ store.get.getCached('key')
 // TypeScript error - _internalCache is hidden
 store.get()._internalCache
 ```
+
+Restriction applies consistently to `get`, `set`, `use`, low-level API reads and writes,
+subscriptions, persistence, migrations, and hydration callbacks. Custom getters and setters
+defined before restriction may intentionally provide controlled access to private values.
 
 ### Plugins
 
@@ -272,13 +300,26 @@ const store = createStore({ data: null })
             try {
                 const data = await api.getData()
                 set.data(data)
-            } catch (e) {
-                set.setError(e.message)
+            } catch (error) {
+                set.setError(error instanceof Error ? error.message : String(error))
             } finally {
                 set.stopLoading()
             }
         },
     }))
+```
+
+The built-in `withReset` plugin restores the complete initial state assembled through
+`createStore` and `extendByState`:
+
+```ts
+import { createStore, withReset } from 'zustand-lite'
+
+const store = createStore({ count: 0 })
+    .composePlugin(withReset)
+
+store.set.count(10)
+store.set.reset()
 ```
 
 ### Middleware
@@ -297,6 +338,43 @@ const store = createStore(
 ```
 
 Actions show up in DevTools with clear labels like `CounterStore/count` or `CounterStore/myOwnAction`.
+
+Both middleware entries also accept their corresponding Zustand options objects. Persistence
+automatically uses a key derived from the global application name and store name:
+
+```ts
+const store = createStore(
+    { session: null as { id: string } | null, temporary: '' },
+    {
+        name: 'SessionStore',
+        middlewares: {
+            persist: {
+                partialize: ({ session }) => ({ session }),
+            },
+        },
+    }
+)
+
+const persisted = await store.api.persist.read()
+await store.api.persist.rehydrate()
+store.api.persist.clearStorage()
+```
+
+`store.api.persist` also exposes Zustand's hydration listeners, status, options, and storage
+controls. `read()` returns the persisted state without its storage envelope. Restricted fields
+are removed from storage reads and writes as well as persistence callbacks.
+
+When browser storage is unavailable, such as during SSR, persistence uses a no-op fallback.
+This keeps the persist API and hydration lifecycle available without accessing `localStorage`.
+
+Use `setGlobalConfig` once during application setup to customize the DevTools application name
+or enable action logging for every store:
+
+```ts
+import { setGlobalConfig } from 'zustand-lite'
+
+setGlobalConfig({ appName: 'My App', logging: true })
+```
 
 Selector subscriptions are available by default, without receiving unrelated updates:
 
@@ -319,6 +397,15 @@ option, the listener runs only after the selected value changes.
 ---
 
 ## API Reference
+
+### Exports
+
+- `createStore` — create a Zustand Lite store
+- `definePlugin` — define a reusable, type-safe plugin
+- `setGlobalConfig` — configure the application name and global action logging
+- `withOptions` — configure options for a custom getter hook
+- `withReset` — add a setter that restores the complete initial state
+- `StoreApi`, `StoreApiEncapsulated`, `UseGetterOptions` — public TypeScript types
 
 ### `createStore(initialState, options?)`
 
@@ -352,7 +439,9 @@ Creates a store with auto-generated hooks and setters.
 | `store.set.field(value)` | Update a field |
 | `store.set(partial)` | Merge partial state |
 | `store.set(fn)` | Update with function |
-| `store.api` | Raw Zustand API |
+| `store.api` | Low-level wrapped Zustand API |
+| `store.api.subscribe(...)` | Subscribe to state or a selected value |
+| `store.api.persist` | Persistence controls when persist middleware is enabled |
 
 ---
 

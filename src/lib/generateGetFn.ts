@@ -4,11 +4,10 @@ import { State } from '../types'
 import { generateGetFnBase } from './generateGetFnBase'
 
 /**
- * Generates getters for store.get. In the past getters were generated as functions, but I
- * came to the conclusion that it's better and simpler to return the whole state.
+ * Generates the root `store.get()` accessor.
  *
- * @param lib Zustand api interface
+ * @param storeLib Underlying Zustand vanilla store.
  */
-export function generateGetFn<S extends State>(lib: StoreLib<S>) {
-	return generateGetFnBase(lib)
+export function generateGetFn<StoreState extends State>(storeLib: StoreLib<StoreState>) {
+	return generateGetFnBase(storeLib)
 }
